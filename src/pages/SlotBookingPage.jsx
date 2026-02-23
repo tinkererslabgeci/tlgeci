@@ -42,7 +42,7 @@ const GOOGLE_FORM_ENTRY = {
   date: '1948110390',
   timeFrom: '962636643',
   timeTo: '1454124321',
-  // In your current Google Form this appears to be a single short-answer question
+
   // that captures Yes/No (+ optional certificate no) together.
   workingIndependently: '361198102',
   trainingCertificateNo: '',
