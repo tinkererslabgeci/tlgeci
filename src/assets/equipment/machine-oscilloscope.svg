@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.05)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="800" rx="28" fill="url(#bg)"/>
+
+  <!-- scope body -->
+  <rect x="140" y="170" width="920" height="480" rx="34" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)"/>
+  <rect x="200" y="230" width="520" height="310" rx="22" fill="rgba(0,0,0,0.22)" stroke="rgba(255,255,255,0.10)"/>
+
+  <!-- grid lines -->
+  <g opacity="0.25" stroke="rgba(255,255,255,0.20)" stroke-width="1">
+    <path d="M240 260 H680"/>
+    <path d="M240 300 H680"/>
+    <path d="M240 340 H680"/>
+    <path d="M240 380 H680"/>
+    <path d="M240 420 H680"/>
+    <path d="M240 460 H680"/>
+    <path d="M280 245 V525"/>
+    <path d="M340 245 V525"/>
+    <path d="M400 245 V525"/>
+    <path d="M460 245 V525"/>
+    <path d="M520 245 V525"/>
+    <path d="M580 245 V525"/>
+    <path d="M640 245 V525"/>
+  </g>
+
+  <!-- waveform -->
+  <path d="M240 390 C270 390, 270 310, 300 310 C330 310, 330 470, 360 470 C390 470, 390 335, 420 335 C450 335, 450 430, 480 430 C510 430, 510 360, 540 360 C570 360, 570 410, 600 410 C630 410, 630 350, 660 350 C690 350, 700 390, 720 390" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- knobs -->
+  <g>
+    <circle cx="820" cy="290" r="44" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+    <circle cx="930" cy="290" r="44" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+    <circle cx="820" cy="410" r="44" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+    <circle cx="930" cy="410" r="44" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)"/>
+    <circle cx="875" cy="525" r="54" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.14)"/>
+    <circle cx="875" cy="525" r="20" fill="rgba(255,255,255,0.10)"/>
+  </g>
+
+  <!-- subtle caption bars -->
+  <rect x="80" y="80" width="420" height="18" rx="9" fill="rgba(255,255,255,0.10)"/>
+  <rect x="80" y="112" width="300" height="14" rx="7" fill="rgba(255,255,255,0.08)"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d0f14"/>
+      <stop offset="1" stop-color="#101826"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <rect x="70" y="70" width="1060" height="660" rx="36" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>
+
+  <path d="M180 520c60-140 150-210 270-210 110 0 190 60 260 160" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M210 560c90-190 220-280 390-280 160 0 280 80 390 220" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="12" stroke-linecap="round"/>
+
+  <path d="M560 250h440" stroke="rgba(255,255,255,0.22)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M560 320h360" stroke="rgba(255,255,255,0.14)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M560 390h300" stroke="rgba(255,255,255,0.12)" stroke-width="10" stroke-linecap="round"/>
+
+  <text x="110" y="160" fill="rgba(255,255,255,0.86)" font-size="44" font-family="system-ui,Segoe UI,Arial" font-weight="800" letter-spacing="2">TINKERERS LAB</text>
+  <text x="110" y="210" fill="rgba(255,255,255,0.66)" font-size="26" font-family="system-ui,Segoe UI,Arial" font-weight="600">Project Build Day</text>
+  <text x="110" y="670" fill="rgba(255,255,255,0.52)" font-size="22" font-family="system-ui,Segoe UI,Arial" font-weight="600">Poster placeholder — replace with real poster anytime</text>
+</svg>
