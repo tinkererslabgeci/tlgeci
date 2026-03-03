@@ -177,9 +177,28 @@
       totalText: String(b.totalText || b.total || '').trim(),
       workingIndependently: String(b.workingIndependently || '').trim(),
       trainingCertificateNo: String(b.trainingCertificateNo || '').trim(),
+      materialFromLab: String(b.materialFromLab || '').trim(),
+      materialApproxQty: String(b.materialApproxQty || '').trim(),
+      materialRequirementSummary: String(b.materialRequirementSummary || '').trim(),
     };
 
+    if (!booking.materialRequirementSummary) {
+      booking.materialRequirementSummary = buildMaterialRequirementSummary_(booking.materialFromLab, booking.materialApproxQty);
+    }
+
     return booking;
+  }
+
+  function buildMaterialRequirementSummary_(materialFromLab, materialApproxQty) {
+    const fromLab = String(materialFromLab || '').trim();
+    const qty = String(materialApproxQty || '').trim();
+    if (/^y(es)?$/i.test(fromLab)) {
+      return qty ? 'Yes - ' + qty : 'Yes - Quantity not provided';
+    }
+    if (/^n(o)?$/i.test(fromLab)) return 'No';
+    if (!fromLab && !qty) return 'Not applicable';
+    if (!fromLab && qty) return 'Yes - ' + qty;
+    return qty ? fromLab + ' - ' + qty : fromLab;
   }
 
   function parseTotalText_(text, inventory) {
@@ -635,6 +654,9 @@
       'TotalText',
       'WorkingIndependently',
       'TrainingCertificateNo',
+      'MaterialFromLab',
+      'MaterialApproxQty',
+      'MaterialRequirementSummary',
     ];
 
     if (sh.getLastRow() === 0) {
@@ -804,6 +826,7 @@
 
   function appendBooking_(b) {
     const sh = ensureBookingSheet_();
+    const materialSummary = buildMaterialRequirementSummary_(b.materialFromLab, b.materialApproxQty);
     sh.appendRow([
       b.createdAtISO,
       b.name,
@@ -822,6 +845,9 @@
       b.totalText || '',
       b.workingIndependently,
       b.trainingCertificateNo,
+      b.materialFromLab || '',
+      b.materialApproxQty || '',
+      b.materialRequirementSummary || materialSummary,
     ]);
   }
 
@@ -1211,6 +1237,24 @@
     ]);
     const parsed = parseIndependentAndCertificate_(independentRaw);
 
+    const materialFromLabRaw = get([
+      'Is material taken from the lab?',
+      'Is material taken from lab?',
+      'Is materail taken from the lab?',
+      'Material from lab',
+      'MaterialFromLab',
+      'Material required from the lab',
+    ]);
+    const materialApproxQtyRaw = get([
+      'Approximate quantity of the material',
+      'Appocimate quantity of the material',
+      'Approximate quantity',
+      'Material quantity',
+      'MaterialApproxQty',
+    ]);
+    const materialCombinedRaw = get(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
+    const materialParsed = parseMaterialRequirement_(materialFromLabRaw, materialApproxQtyRaw, materialCombinedRaw);
+
     return {
       createdAtISO: new Date().toISOString(),
       name: name,
@@ -1229,6 +1273,9 @@
       totalText: totalText,
       workingIndependently: parsed.independent,
       trainingCertificateNo: parsed.certificate,
+      materialFromLab: materialParsed.materialFromLab,
+      materialApproxQty: materialParsed.materialApproxQty,
+      materialRequirementSummary: materialParsed.materialRequirementSummary,
     };
   }
 
@@ -1270,6 +1317,14 @@
 
     const independent = String(row[idx['WorkingIndependently']] || '').trim();
     const cert = String(row[idx['TrainingCertificateNo']] || '').trim();
+    const materialFromLab =
+      idx['MaterialFromLab'] !== undefined ? String(row[idx['MaterialFromLab']] || '').trim() : '';
+    const materialApproxQty =
+      idx['MaterialApproxQty'] !== undefined ? String(row[idx['MaterialApproxQty']] || '').trim() : '';
+    const materialSummary =
+      idx['MaterialRequirementSummary'] !== undefined
+        ? String(row[idx['MaterialRequirementSummary']] || '').trim()
+        : buildMaterialRequirementSummary_(materialFromLab, materialApproxQty);
 
     if (!slotDate) throw new Error('Booking row missing Date');
 
@@ -1293,6 +1348,8 @@
       '<<TIMETO>>': tt12,
       '<<INDEPENDENT>>': independent,
       '<<CERTIFICATE>>': cert,
+      '<<quantity>>': materialSummary,
+      '<<QUANTITY>>': materialSummary,
     };
 
     const baseName = buildPdfBaseName_(slotDate, name);
@@ -1497,6 +1554,25 @@
       const independent = parsed.independent;
       const certificate = parsed.certificate;
 
+      const materialFromLabRaw = field([
+        'Is material taken from the lab?',
+        'Is material taken from lab?',
+        'Is materail taken from the lab?',
+        'Material from lab',
+        'MaterialFromLab',
+        'Material required from the lab',
+      ]);
+      const materialApproxQtyRaw = field([
+        'Approximate quantity of the material',
+        'Appocimate quantity of the material',
+        'Approximate quantity',
+        'Material quantity',
+        'MaterialApproxQty',
+      ]);
+      const materialCombinedRaw = field(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
+      const materialParsed = parseMaterialRequirement_(materialFromLabRaw, materialApproxQtyRaw, materialCombinedRaw);
+      const materialSummary = materialParsed.materialRequirementSummary;
+
       if (!email) throw new Error('Email is empty (check your Form question title / column name)');
       if (!slotDate || !/^\d{4}-\d{2}-\d{2}$/.test(slotDate)) {
         throw new Error('Slot Date is missing/invalid. Ensure a column named Date / Slot Date exists.');
@@ -1522,6 +1598,8 @@
         '<<TIMETO>>': timeTo,
         '<<INDEPENDENT>>': independent,
         '<<CERTIFICATE>>': certificate,
+        '<<quantity>>': materialSummary,
+        '<<QUANTITY>>': materialSummary,
       };
 
       const docName = buildPdfBaseName_(slotDate, name);
@@ -1696,6 +1774,39 @@
     else if (/^n(o)?\b/i.test(independent)) independent = 'No';
 
     return { independent: independent, certificate: certificate };
+  }
+
+  function parseMaterialRequirement_(fromLabRaw, approxQtyRaw, combinedRaw) {
+    let fromLab = String(fromLabRaw || '').trim();
+    let approxQty = String(approxQtyRaw || '').trim();
+    const combined = String(combinedRaw || '').trim();
+
+    if ((!fromLab && !approxQty) && combined) {
+      if (/^no\b/i.test(combined)) {
+        fromLab = 'No';
+        approxQty = '';
+      } else if (/^yes\b/i.test(combined)) {
+        fromLab = 'Yes';
+        const mYes = /^yes\s*[-,:]?\s*(.*)$/i.exec(combined);
+        approxQty = mYes && mYes[1] ? String(mYes[1]).trim() : '';
+      } else {
+        const m = /^(yes|no)\s*[-,:]?\s*(.*)$/i.exec(combined);
+        if (m) {
+          fromLab = /^yes$/i.test(m[1]) ? 'Yes' : 'No';
+          approxQty = String(m[2] || '').trim();
+        }
+      }
+    }
+
+    if (/^y(es)?$/i.test(fromLab)) fromLab = 'Yes';
+    else if (/^n(o)?$/i.test(fromLab)) fromLab = 'No';
+
+    const materialRequirementSummary = buildMaterialRequirementSummary_(fromLab, approxQty);
+    return {
+      materialFromLab: fromLab,
+      materialApproxQty: approxQty,
+      materialRequirementSummary: materialRequirementSummary,
+    };
   }
 
   function indexOfHeader_(header, name) {

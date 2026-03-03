@@ -4,7 +4,7 @@ import CursorPlane from './components/CursorPlane.jsx'
 import NavBar from './components/NavBar.jsx'
 import HomePage from './pages/HomePage.jsx'
 import EventsPage from './pages/EventsPage.jsx'
-import ExecomPage from './pages/ExecomPage.jsx'
+import TeamPage from './pages/TeamPage.jsx'
 import GalleryPage from './pages/GalleryPage.jsx'
 import SlotBookingPage from './pages/SlotBookingPage.jsx'
 
@@ -38,7 +38,7 @@ function AppShell() {
             <div className="container">
               <Routes>
                 <Route path="/events" element={<EventsPage />} />
-                <Route path="/execom" element={<ExecomPage />} />
+                <Route path="/team" element={<TeamPage />} />
                 <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/booking" element={<SlotBookingPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

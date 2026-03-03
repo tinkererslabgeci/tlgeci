@@ -109,8 +109,8 @@ export default function NavBar({ deferMs = 0 }) {
             Events
           </NavLink>
 
-          <NavLink to="/execom" style={linkStyle}>
-            Execom
+          <NavLink to="/team" style={linkStyle}>
+            Team
           </NavLink>
 
           <NavLink to="/gallery" style={linkStyle}>

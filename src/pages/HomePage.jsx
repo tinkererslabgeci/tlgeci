@@ -156,14 +156,16 @@ export default function HomePage() {
       <div id="about" ref={aboutRef} className={`introBelow ${aboutVisible ? 'isVisible' : ''}`}>
         <div className="container">
           <div className="sectionStack">
-            <section className="card toneA" style={{ padding: '1.4rem' }}>
+            <section className="card toneA mediaLoad" style={{ padding: '1.4rem', '--i': 0 }}>
               <h2 className="sectionH2" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
-                Tinkerers Lab @ GECI
+                Tinkerers' Lab - GECI
               </h2>
               <p style={{ color: 'rgba(255, 255, 255, 0.80)', marginTop: 0, lineHeight: 1.6 }}>
-                A 24/7, student-managed makerspace for building real things—prototype ideas, test circuits,
-                write code, and learn by doing with your peers.
+                Tinkerers' Lab GECI is a student operating makerspace that helps you create,innovate,increment and refine,transforming ideas into reality through hands-on experimenting,team work and learning.
               </p>
+
+              {/* Space left here for more description of Tinkerers Lab */}
+              <div style={{ minHeight: '6rem' }}></div>
 
               <div className="grid cols-2" style={{ marginTop: '1.1rem' }}>
                 <div className="card" style={{ padding: '1rem' }}>

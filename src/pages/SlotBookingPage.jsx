@@ -36,6 +36,9 @@ const GOOGLE_FORM_ENTRY = {
   electronicComponents: '154986440',
   powerTools: '1418554756',
   tools: '902323101',
+  // New Google Form fields (fill from prefilled link if needed)
+  materialFromLab: '673444253',
+  materialApproxQty: '2057421952',
   // Long-answer question: "TOTAL" (all selected equipments with quantities)
   // Fill this with the entry id from your new prefilled link.
   total: '1262383128',
@@ -678,6 +681,8 @@ export default function SlotBookingPage() {
   const [timeTo, setTimeTo] = useState('')
   const [workingIndependently, setWorkingIndependently] = useState('No')
   const [trainingCertificateNo, setTrainingCertificateNo] = useState('')
+  const [materialFromLab, setMaterialFromLab] = useState('No')
+  const [materialApproxQty, setMaterialApproxQty] = useState('')
   const [error, setError] = useState('')
   const [sheetStatus, setSheetStatus] = useState('')
   const [sheetError, setSheetError] = useState('')
@@ -734,6 +739,89 @@ export default function SlotBookingPage() {
   const configured = useMemo(() => isConfiguredEntryMap(GOOGLE_FORM_ENTRY), [])
   const appsScriptConfigured = useMemo(() => isConfiguredAppsScript(APPS_SCRIPT_WEB_APP_URL), [])
 
+  const mechanicalConsumableOptions = useMemo(() => {
+    const group = TOOL_OPTION_GROUPS.find((g) => /consumables/i.test(String(g?.label || '')))
+    return Array.isArray(group?.options) ? group.options : []
+  }, [])
+
+  const materialEligibleMachines = useMemo(() => {
+    const materialMachinePattern = /(3d printer|laser cutter|cricut|vinyl)/i
+    return machines.filter((machine) => materialMachinePattern.test(machine))
+  }, [machines])
+
+  const needsMaterialQuestions = materialEligibleMachines.length > 0
+
+  const applicableConsumables = useMemo(() => {
+    if (!needsMaterialQuestions) return []
+
+    const wanted = new Set()
+    for (const machine of materialEligibleMachines) {
+      if (/3d printer/i.test(machine)) {
+        for (const item of mechanicalConsumableOptions) {
+          if (/3d printer spool/i.test(item)) wanted.add(item)
+        }
+      }
+
+      if (/laser cutter/i.test(machine)) {
+        for (const item of mechanicalConsumableOptions) {
+          if (/acrylic sheet|mdf sheet/i.test(item)) wanted.add(item)
+        }
+      }
+
+      if (/cricut|vinyl/i.test(machine)) {
+        for (const item of mechanicalConsumableOptions) {
+          if (/vinyl roll/i.test(item)) wanted.add(item)
+        }
+      }
+    }
+
+    return mechanicalConsumableOptions.filter((item) => wanted.has(item))
+  }, [needsMaterialQuestions, materialEligibleMachines, mechanicalConsumableOptions])
+
+  const selectedApplicableConsumables = useMemo(() => {
+    if (!applicableConsumables.length) return []
+    const set = new Set(applicableConsumables)
+    return tools.filter((item) => set.has(item))
+  }, [applicableConsumables, tools])
+
+  const materialConsumablesSummary = useMemo(() => {
+    if (!selectedApplicableConsumables.length) return ''
+    return selectedApplicableConsumables
+      .map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`)
+      .join(', ')
+  }, [selectedApplicableConsumables, itemQty])
+
+  useEffect(() => {
+    if (needsMaterialQuestions) return
+    setMaterialFromLab('No')
+    setMaterialApproxQty('')
+  }, [needsMaterialQuestions])
+
+  useEffect(() => {
+    if (materialFromLab === 'Yes') return
+    setMaterialApproxQty('')
+  }, [materialFromLab])
+
+  useEffect(() => {
+    if (!needsMaterialQuestions || materialFromLab !== 'Yes') return
+    setMaterialApproxQty(materialConsumablesSummary)
+  }, [needsMaterialQuestions, materialFromLab, materialConsumablesSummary])
+
+  const materialRequirementSummary = useMemo(() => {
+    if (!needsMaterialQuestions) return 'Not applicable'
+    if (materialFromLab !== 'Yes') return 'No'
+    const qty = (materialConsumablesSummary || materialApproxQty).trim()
+    return qty ? `Yes - ${qty}` : 'Yes - Quantity not provided'
+  }, [needsMaterialQuestions, materialFromLab, materialApproxQty, materialConsumablesSummary])
+
+  function onApplicableConsumablesChange(nextApplicable) {
+    const dedupedApplicable = Array.from(new Set(nextApplicable))
+    setTools((prevTools) => {
+      const keepOtherTools = prevTools.filter((it) => !applicableConsumables.includes(it))
+      return [...keepOtherTools, ...dedupedApplicable]
+    })
+  }
+
   function normalizeItemQty(n) {
     const v = Number(n)
     if (!Number.isFinite(v)) return 0
@@ -784,7 +872,17 @@ export default function SlotBookingPage() {
     }
 
     if (categories.includes('TOOLS') && tools.length) {
-      lines.push(`TOOLS: ${tools.map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`).join(', ')}`)
+      lines.push(
+        `TOOLS / SAFETY / CONSUMABLES: ${tools.map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`).join(', ')}`
+      )
+    }
+
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && materialConsumablesSummary) {
+      lines.push(`MATERIAL CONSUMABLES: ${materialConsumablesSummary}`)
+    }
+
+    if (needsMaterialQuestions) {
+      lines.push(`MATERIAL FROM LAB: ${materialRequirementSummary}`)
     }
 
     if (categories.includes(NONE_CATEGORY) && categories.length === 1) {
@@ -792,7 +890,18 @@ export default function SlotBookingPage() {
     }
 
     return lines.join('\n')
-  }, [categories, machines, electronicComponents, powerTools, tools, itemQty])
+  }, [
+    categories,
+    machines,
+    electronicComponents,
+    powerTools,
+    tools,
+    itemQty,
+    needsMaterialQuestions,
+    materialFromLab,
+    materialConsumablesSummary,
+    materialRequirementSummary,
+  ])
 
   async function callAppsScript({ commit, booking }) {
     const res = await fetch(APPS_SCRIPT_WEB_APP_URL, {
@@ -890,6 +999,9 @@ export default function SlotBookingPage() {
       totalText,
       workingIndependently,
       trainingCertificateNo: trainingCertificateNo.trim(),
+      materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
+      materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
+      materialRequirementSummary,
     }
 
     setCheckingAvailability(true)
@@ -965,7 +1077,13 @@ export default function SlotBookingPage() {
           }
         if (c === 'POWER TOOLS')
           return { key: c, label: 'POWER TOOLS', options: POWER_TOOL_OPTION_GROUPS, value: powerTools, onChange: setPowerTools }
-        return { key: c, label: 'TOOLS', options: TOOL_OPTION_GROUPS, value: tools, onChange: setTools }
+        return {
+          key: c,
+          label: 'TOOLS / SAFETY / CONSUMABLES',
+          options: TOOL_OPTION_GROUPS,
+          value: tools,
+          onChange: setTools,
+        }
       })
   }, [categories, machines, electronicComponents, powerTools, tools])
 
@@ -1011,6 +1129,9 @@ export default function SlotBookingPage() {
       if (available !== null && normalizeItemQty(itemQty[it]) > available) return false
     }
 
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && !selectedApplicableConsumables.length) return false
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && !materialConsumablesSummary.trim()) return false
+
     if (workingIndependently === 'Yes' && !trainingCertificateNo.trim()) return false
 
     // Basic time range check (string compare works for HH:MM)
@@ -1037,6 +1158,11 @@ export default function SlotBookingPage() {
     powerTools,
     tools,
     itemQty,
+    needsMaterialQuestions,
+    materialFromLab,
+    materialApproxQty,
+    selectedApplicableConsumables,
+    materialConsumablesSummary,
     sheetResult,
     workingIndependently,
     trainingCertificateNo,
@@ -1069,6 +1195,8 @@ export default function SlotBookingPage() {
     setTimeTo('')
     setWorkingIndependently('No')
     setTrainingCertificateNo('')
+    setMaterialFromLab('No')
+    setMaterialApproxQty('')
   }
 
   function showSubmitPopup(targetEmail) {
@@ -1109,48 +1237,50 @@ export default function SlotBookingPage() {
       timeTo,
       workingIndependently,
       trainingCertificateNo: trainingCertificateNo.trim(),
+      materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
+      materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
+      materialRequirementSummary,
       createdAt: new Date().toISOString(),
     }
 
     // 1) Apps Script commit (fills Bookings sheet automatically)
     const commitPromise = appsScriptConfigured
       ? (async () => {
-          setSheetStatus('Checking & reserving…')
-          try {
-            const resp = await callAppsScript({ commit: true, booking })
-            setSheetResult(resp)
+        setSheetStatus('Checking & reserving…')
+        try {
+          const resp = await callAppsScript({ commit: false, booking })
+          setSheetResult(resp)
 
-            if (!resp?.ok) {
-              setSheetStatus('')
-              setSheetError(String(resp?.error || 'Conflict detected. Please adjust your selection/time slot.'))
-              return { ok: false, resp, appsScriptOk: true }
-            }
-
-            setSheetStatus('Stored in Bookings sheet.')
-            setSheetError('')
-            return { ok: true, resp, appsScriptOk: true }
-          } catch (err) {
-            // Don't block Google Form submission if Apps Script is down/misconfigured.
+          if (!resp?.ok) {
             setSheetStatus('')
-            setSheetResult(null)
-            setSheetError(String(err?.message || err || 'Failed to store/check booking'))
-            return { ok: true, resp: null, appsScriptOk: false }
+            setSheetError(String(resp?.error || 'Conflict detected. Please adjust your selection/time slot.'))
+            return { ok: false, resp, appsScriptOk: true }
           }
-        })()
+
+          setSheetStatus('Stored in Bookings sheet.')
+          setSheetError('')
+          return { ok: true, resp, appsScriptOk: true }
+        } catch (err) {
+          // Don't block Google Form submission if Apps Script is down/misconfigured.
+          setSheetStatus('')
+          setSheetResult(null)
+          setSheetError(String(err?.message || err || 'Failed to store/check booking'))
+          return { ok: true, resp: null, appsScriptOk: false }
+        }
+      })()
       : Promise.resolve({ ok: true, resp: null })
 
     commitPromise
       .then(({ ok, appsScriptOk }) => {
         if (!ok) return
 
-        // 2) Google Form submit (optional)
+        // 2) Google Form submit (optional fallback)
         if (!configured) {
           if (appsScriptConfigured) {
             showSubmitPopup(booking.email)
             onClearSheet()
             return
           }
-
           setError(
             'Google Form submission is not configured yet. Send me the Google Form prefilled link and I will map the entry IDs.'
           )
@@ -1182,6 +1312,13 @@ export default function SlotBookingPage() {
         }
         if (booking.categories.includes('TOOLS') && GOOGLE_FORM_ENTRY.tools) {
           params.set(`entry.${GOOGLE_FORM_ENTRY.tools}`, booking.tools.join(', '))
+        }
+
+        if (GOOGLE_FORM_ENTRY.materialFromLab) {
+          params.set(`entry.${GOOGLE_FORM_ENTRY.materialFromLab}`, booking.materialFromLab)
+        }
+        if (GOOGLE_FORM_ENTRY.materialApproxQty) {
+          params.set(`entry.${GOOGLE_FORM_ENTRY.materialApproxQty}`, booking.materialApproxQty)
         }
 
         // Long-answer summary with quantities
@@ -1299,6 +1436,7 @@ export default function SlotBookingPage() {
                   <div style={{ display: 'grid', gap: '0.45rem' }}>
                     {CATEGORIES.map((c) => {
                       const checked = categories.includes(c)
+                      const displayCategory = c === 'TOOLS' ? 'TOOLS / SAFETY / CONSUMABLES' : c
                       return (
                         <label
                           key={c}
@@ -1312,7 +1450,7 @@ export default function SlotBookingPage() {
                               else onCategoriesChange(categories.filter((x) => x !== c))
                             }}
                           />
-                          <span>{c}</span>
+                          <span>{displayCategory}</span>
                         </label>
                       )
                     })}
@@ -1323,73 +1461,149 @@ export default function SlotBookingPage() {
                 </div>
               </div>
 
-                {itemSections.map((sec) => (
-                  <div key={sec.key} className="card" style={{ padding: '0.9rem' }}>
-                    <div style={{ fontWeight: 800, marginBottom: '0.55rem' }}>{sec.label}</div>
-                    <SearchMultiSelectDropdown
-                      value={sec.value}
-                      options={sec.options}
-                      onChange={sec.onChange}
-                      placeholder={`Select ${sec.label.toLowerCase()}…`}
-                      searchPlaceholder={`Search ${sec.label.toLowerCase()}…`}
-                    />
+              {itemSections.map((sec) => (
+                <div key={sec.key} className="card" style={{ padding: '0.9rem' }}>
+                  <div style={{ fontWeight: 800, marginBottom: '0.55rem' }}>{sec.label}</div>
+                  <SearchMultiSelectDropdown
+                    value={sec.value}
+                    options={sec.options}
+                    onChange={sec.onChange}
+                    placeholder={`Select ${sec.label.toLowerCase()}…`}
+                    searchPlaceholder={`Search ${sec.label.toLowerCase()}…`}
+                  />
 
-                    {sec.value.length ? (
-                      sec.key === 'ELECTRONIC COMPONENTS' || sec.key === 'POWER TOOLS' || sec.key === 'TOOLS' ? (
-                        <div style={{ marginTop: '0.65rem', display: 'grid', gap: '0.55rem' }}>
-                          {sec.value.map((it) => {
-                            const left = sheetResult?.inventoryLeft?.[it]
-                            const total = INVENTORY_QTY[it]
-                            const maxQty = Number.isFinite(left) ? left : Number.isFinite(total) ? total : undefined
+                  {sec.value.length ? (
+                    sec.key === 'ELECTRONIC COMPONENTS' || sec.key === 'POWER TOOLS' || sec.key === 'TOOLS' ? (
+                      <div style={{ marginTop: '0.65rem', display: 'grid', gap: '0.55rem' }}>
+                        {sec.value.map((it) => {
+                          const left = sheetResult?.inventoryLeft?.[it]
+                          const total = INVENTORY_QTY[it]
+                          const maxQty = Number.isFinite(left) ? left : Number.isFinite(total) ? total : undefined
 
-                            return (
-                              <div
-                                key={it}
-                                style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: '1fr 110px',
-                                  gap: '0.65rem',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                <div style={{ lineHeight: 1.4 }}>
-                                  <div style={{ color: 'rgba(255, 255, 255, 0.80)' }}>{it}</div>
-                                  {Number.isFinite(left) ? (
-                                    <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
-                                      Left: {left}
-                                    </div>
-                                  ) : Number.isFinite(total) ? (
-                                    <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
-                                      Total: {total}
-                                    </div>
-                                  ) : null}
-                                </div>
-
-                                <input
-                                  className="input"
-                                  type="number"
-                                  min={1}
-                                  max={maxQty}
-                                  step={1}
-                                  value={normalizeItemQty(itemQty[it] ?? 1) || 1}
-                                  onChange={(e) => setQtyForItem(it, e.target.value)}
-                                  placeholder="Qty"
-                                  aria-label={`${it} quantity`}
-                                />
+                          return (
+                            <div
+                              key={it}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 110px',
+                                gap: '0.65rem',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <div style={{ lineHeight: 1.4 }}>
+                                <div style={{ color: 'rgba(255, 255, 255, 0.80)' }}>{it}</div>
+                                {Number.isFinite(left) ? (
+                                  <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                                    Left: {left}
+                                  </div>
+                                ) : Number.isFinite(total) ? (
+                                  <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                                    Total: {total}
+                                  </div>
+                                ) : null}
                               </div>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
-                          {sec.value.join(', ')}
-                        </div>
-                      )
+
+                              <input
+                                className="input"
+                                type="number"
+                                min={1}
+                                max={maxQty}
+                                step={1}
+                                value={normalizeItemQty(itemQty[it] ?? 1) || 1}
+                                onChange={(e) => setQtyForItem(it, e.target.value)}
+                                placeholder="Qty"
+                                aria-label={`${it} quantity`}
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
                     ) : (
-                      <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.55)' }}>Select at least one</div>
-                    )}
+                      <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
+                        {sec.value.join(', ')}
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.55)' }}>Select at least one</div>
+                  )}
+                </div>
+              ))}
+
+              {needsMaterialQuestions ? (
+                <div className="card" style={{ padding: '0.9rem' }}>
+                  <div style={{ fontWeight: 800, marginBottom: '0.55rem' }}>Material requirement (for selected machines)</div>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.68)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>
+                    Applicable for: {materialEligibleMachines.join(', ')}
                   </div>
-                ))}
+
+                  <div style={{ display: 'grid', gap: '0.7rem' }}>
+                    <div>
+                      <label className="label">Is material taken from the lab?</label>
+                      <select className="input" value={materialFromLab} onChange={(e) => setMaterialFromLab(e.target.value)}>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    {materialFromLab === 'Yes' ? (
+                      <>
+                        <div>
+                          <label className="label">Select applicable consumables</label>
+                          <SearchMultiSelectDropdown
+                            value={selectedApplicableConsumables}
+                            options={[{ label: 'Applicable Consumables', options: applicableConsumables }]}
+                            onChange={onApplicableConsumablesChange}
+                            placeholder="Select consumables…"
+                            searchPlaceholder="Search consumables…"
+                          />
+                          <div style={{ marginTop: '0.4rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                            If already chosen in TOOLS / SAFETY / CONSUMABLES, no need to select again.
+                          </div>
+                        </div>
+
+                        {selectedApplicableConsumables.length ? (
+                          <div style={{ display: 'grid', gap: '0.55rem' }}>
+                            {selectedApplicableConsumables.map((it) => {
+                              const left = sheetResult?.inventoryLeft?.[it]
+                              const total = INVENTORY_QTY[it]
+                              const maxQty = Number.isFinite(left) ? left : Number.isFinite(total) ? total : undefined
+
+                              return (
+                                <div
+                                  key={`material_${it}`}
+                                  style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 110px',
+                                    gap: '0.65rem',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <div style={{ lineHeight: 1.4, color: 'rgba(255, 255, 255, 0.80)' }}>{it}</div>
+                                  <input
+                                    className="input"
+                                    type="number"
+                                    min={1}
+                                    max={maxQty}
+                                    step={1}
+                                    value={normalizeItemQty(itemQty[it] ?? 1) || 1}
+                                    onChange={(e) => setQtyForItem(it, e.target.value)}
+                                    placeholder="Qty"
+                                    aria-label={`${it} quantity`}
+                                  />
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ color: 'rgba(255, 120, 120, 0.85)', fontSize: '0.88rem' }}>
+                            Select at least one consumable when taking material from lab.
+                          </div>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
 
               <div>
                 <label className="label">TOTAL (auto-generated)</label>
@@ -1469,7 +1683,7 @@ export default function SlotBookingPage() {
                           <div key={idx} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: '0.92rem', lineHeight: 1.45 }}>
                             {c.kind === 'machine'
                               ? `${c.item} is already booked (${c.existing?.from}–${c.existing?.to})` +
-                                (c.existing?.name ? ` by ${c.existing.name}` : '')
+                              (c.existing?.name ? ` by ${c.existing.name}` : '')
                               : `${c.item}: needed ${c.needed}, left ${c.left}`}
                           </div>
                         ))}
@@ -1555,7 +1769,14 @@ export default function SlotBookingPage() {
               <iframe
                 title="Lab schedule calendar"
                 src={GOOGLE_CALENDAR_EMBED_URL}
-                style={{ width: '100%', height: 620, border: 0, borderRadius: 10 }}
+                style={{
+                  width: '100%',
+                  height: 620,
+                  border: 0,
+                  borderRadius: 10,
+                  colorScheme: 'light',
+                  filter: 'invert(1) hue-rotate(180deg) contrast(0.85) brightness(0.9)'
+                }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
