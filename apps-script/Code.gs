@@ -37,8 +37,8 @@
   }
 
   function getFormResponsesSheetName_() {
-    // Optional: if set, only process submissions coming from this sheet tab.
-    // Example value: "Form Responses 1"
+    // Optional: target sheet name for mirroring API bookings into a
+    // Form-Responses-style master tab.
     const prop = PropertiesService.getScriptProperties().getProperty('FORM_RESPONSES_SHEET_NAME');
     return String(prop || '').trim();
   }
@@ -148,7 +148,25 @@
     const result2 = checkConflicts_(normalized, bookings2, inv2);
     if (!result2.ok) return result2;
 
-    appendBooking_(normalized);
+    const apiLock = LockService.getScriptLock();
+    apiLock.waitLock(30000);
+
+    let bookingsSheet = null;
+    let bookingRowIndex = 0;
+    let bookingReqKey = '';
+    try {
+      bookingsSheet = ensureBookingSheet_();
+      bookingReqKey = buildBookingRequestKey_(normalized);
+      const existingRow = findBookingRowByRequestKey_(bookingsSheet, bookingReqKey);
+      if (existingRow > 0) {
+        bookingRowIndex = existingRow;
+      } else {
+        normalized.bookingRequestKey = bookingReqKey;
+        bookingRowIndex = appendBooking_(normalized);
+      }
+    } finally {
+      apiLock.releaseLock();
+    }
 
     const out = {
       ok: true,
@@ -165,10 +183,19 @@
       const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
       const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
       const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
-      const bookingsSheet = ensureBookingSheet_();
-      const bookingRowIndex = bookingsSheet.getLastRow();
+      if (!bookingsSheet || bookingRowIndex < 2) {
+        bookingsSheet = ensureBookingSheet_();
+        if (!bookingRowIndex || bookingRowIndex < 2) bookingRowIndex = bookingsSheet.getLastRow();
+      }
       const header = bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String);
       const idx = indexMap_(header);
+
+      if (bookingReqKey) {
+        setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'BookingRequestKey', bookingReqKey);
+      }
+
+      const mirrorResult = mirrorBookingToFormResponsesFromBookingRow_(bookingsSheet, bookingRowIndex);
+      out.formResponseMirror = mirrorResult;
 
       if (!templateDocId) {
         setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'EmailStatus', 'SKIPPED');
@@ -723,6 +750,11 @@
       'CalendarStatus',
       'CalendarError',
       'CalendarEventIdsJSON',
+      'BookingRequestKey',
+      'FormResponseMirroredAtISO',
+      'FormResponseMirrorStatus',
+      'FormResponseMirrorError',
+      'FormResponseMirrorRow',
       'SourceSheet',
       'SourceRow',
     ];
@@ -925,6 +957,7 @@
     const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
     const idx = indexMap_(header);
     const materialSummary = buildMaterialRequirementSummary_(b.materialFromLab, b.materialApproxQty);
+    const reqKey = String(b.bookingRequestKey || buildBookingRequestKey_(b) || '').trim();
     const row = new Array(header.length).fill('');
 
     function setCol(name, value) {
@@ -953,8 +986,10 @@
     setCol('MaterialFromLab', b.materialFromLab || '');
     setCol('MaterialApproxQty', b.materialApproxQty || '');
     setCol('MaterialRequirementSummary', b.materialRequirementSummary || materialSummary);
+    setCol('BookingRequestKey', reqKey);
 
     sh.appendRow(row);
+    return sh.getLastRow();
   }
 
   function jsonOut_(obj) {
@@ -1079,45 +1114,9 @@
 
   /**
   * ------------------------------
-  * Google Forms automation (PDF + email + Drive folders)
+  * Setup validation helper
   * ------------------------------
-  *
-  * Installable trigger handler.
-  * When a new Form response row is added, this will:
-  * - Read the row
-  * - Create folders: <root>/<YYYY>/<MM>/<DD>
-  * - Copy a Doc template, fill placeholders, export to PDF
-  * - Save PDF in that day folder
-  * - Email the PDF to the user
-  * - Mark the row as sent (or error)
   */
-
-  function setupFormSubmitTrigger() {
-    const ssId = getSpreadsheetId_();
-    const triggers = ScriptApp.getProjectTriggers();
-    for (var i = 0; i < triggers.length; i++) {
-      const t = triggers[i];
-      if (t.getHandlerFunction && t.getHandlerFunction() === 'onFormSubmitProcess_') {
-        return { ok: true, message: 'Trigger already exists (onFormSubmitProcess_).' };
-      }
-    }
-
-    ScriptApp.newTrigger('onFormSubmitProcess_').forSpreadsheet(ssId).onFormSubmit().create();
-    return { ok: true, message: 'Form submit trigger created.' };
-  }
-
-  function removeFormSubmitTriggers() {
-    const triggers = ScriptApp.getProjectTriggers();
-    var removed = 0;
-    for (var i = 0; i < triggers.length; i++) {
-      const t = triggers[i];
-      if (t.getHandlerFunction && t.getHandlerFunction() === 'onFormSubmitProcess_') {
-        ScriptApp.deleteTrigger(t);
-        removed++;
-      }
-    }
-    return { ok: true, removed: removed };
-  }
 
   /**
   * One-time helper to run manually from the Apps Script editor.
@@ -1130,7 +1129,7 @@
   * Run order recommendation:
   * 1) Set Script Properties (SPREADSHEET_ID, BOOKING_TEMPLATE_DOC_ID, ARCHIVE_ROOT_FOLDER_ID, LAB_CALENDAR_ID)
   * 2) Run authorizeAndValidateSetup()
-  * 3) Run setupFormSubmitTrigger()
+  * 3) Submit one test booking via the web app API
   */
   function authorizeAndValidateSetup() {
     const props = PropertiesService.getScriptProperties();
@@ -1178,220 +1177,200 @@
     };
   }
 
-  /**
-  * One-time helper: migrate existing Google Form responses into the `Bookings` tab.
-  *
-  * This is useful if you previously configured the script to use `Form Responses 1`
-  * as the bookings sheet and want to restore the separation.
-  *
-  * Safe by default:
-  * - Does NOT delete any rows from `Form Responses 1`
-  * - Adds a marker column `MigratedToBookingsAtISO` to avoid duplicates
-  */
-  function migrateFormResponsesToBookings(options) {
-    options = options || {};
-    const ss = SpreadsheetApp.openById(getSpreadsheetId_());
-    const sourceName = String(options.sourceSheetName || getFormResponsesSheetName_() || 'Form Responses 1').trim();
-    const source = ss.getSheetByName(sourceName);
-    if (!source) throw new Error('Missing source sheet: ' + sourceName);
 
-    const sendEmails = options.sendEmails === true;
-    const templateDocId = String(
-      options.templateDocId || PropertiesService.getScriptProperties().getProperty('BOOKING_TEMPLATE_DOC_ID') || ''
-    ).trim();
-    const rootFolderId = String(
-      options.rootFolderId || PropertiesService.getScriptProperties().getProperty('ARCHIVE_ROOT_FOLDER_ID') || ''
-    ).trim();
-    const rootFolderName = String(
-      options.rootFolderName || PropertiesService.getScriptProperties().getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive'
-    );
+  function buildBookingRequestKey_(b) {
+    const booking = b || {};
+    const date = normalizeDateValue_(booking.date);
+    const from = normalizeTimeValue_(booking.timeFrom);
+    const to = normalizeTimeValue_(booking.timeTo);
+    const email = String(booking.email || '').trim().toLowerCase();
+    const ktu = String(booking.ktuId || '').trim().toLowerCase();
+    const name = String(booking.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-    const root = rootFolderId || rootFolderName ? getArchiveRootFolder_(rootFolderId, rootFolderName) : null;
+    const machinesArr = Array.isArray(booking.machines) ? booking.machines : splitCsv_(booking.machines);
+    const machines = machinesArr
+      .map((m) => String(m || '').trim().toLowerCase())
+      .filter(Boolean)
+      .sort()
+      .join('|');
 
-    const lastRow = source.getLastRow();
-    const lastCol = source.getLastColumn();
-    if (lastRow < 2 || lastCol < 1) return { ok: true, migrated: 0, skipped: 0 };
-
-    let header = source.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-    const migrateColName = 'MigratedToBookingsAtISO';
-    let migrateIdx = indexOfHeader_(header, migrateColName);
-    if (migrateIdx < 0) {
-      header.push(migrateColName);
-      source.getRange(1, 1, 1, header.length).setValues([header]);
-      migrateIdx = header.length - 1;
-    }
-
-    const bookingsSheet = ensureBookingSheet_();
-    const bookingsHeader = bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String);
-    const bookingsIdx = indexMap_(bookingsHeader);
-
-    var migrated = 0;
-    var skipped = 0;
-    for (var r = 2; r <= lastRow; r++) {
-      const row = source.getRange(r, 1, 1, source.getLastColumn()).getValues()[0];
-      const marker = String(row[migrateIdx] || '').trim();
-      if (marker) {
-        skipped++;
-        continue;
-      }
-
-      const booking = normalizeBookingFromFormRow_(header, row);
-      if (!booking.email || !booking.date) {
-        skipped++;
-        source.getRange(r, migrateIdx + 1).setValue('SKIPPED (missing email/date)');
-        continue;
-      }
-
-      appendBooking_(booking);
-      const newRow = bookingsSheet.getLastRow();
-      setIfColumnExists_(bookingsSheet, newRow, bookingsIdx, 'SourceSheet', source.getName());
-      setIfColumnExists_(bookingsSheet, newRow, bookingsIdx, 'SourceRow', r);
-
-      // Optionally send confirmations for migrated rows.
-      if (sendEmails) {
-        if (!templateDocId) throw new Error('sendEmails=true but BOOKING_TEMPLATE_DOC_ID is not set');
-        if (!root) throw new Error('sendEmails=true but ARCHIVE_ROOT_FOLDER_ID/NAME not set');
-        sendConfirmationForBookingRow_(bookingsSheet, newRow, {
-          templateDocId: templateDocId,
-          rootFolder: root,
-          updateMonthlyArchive: true,
-        });
-      }
-
-      source.getRange(r, migrateIdx + 1).setValue(new Date().toISOString());
-      migrated++;
-    }
-
-    return { ok: true, migrated: migrated, skipped: skipped, sendEmails: sendEmails, sourceSheet: sourceName };
+    return [date, from, to, email, ktu, name, machines].join('||');
   }
 
-  function onFormSubmitProcess_(e) {
-    // IMPORTANT: this must stay lightweight; triggers have execution limits.
-    const props = PropertiesService.getScriptProperties();
-    const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
-    if (!templateDocId) throw new Error('Missing Script Property BOOKING_TEMPLATE_DOC_ID (Google Doc template id)');
+  function findBookingRowByRequestKey_(bookingsSheet, requestKey) {
+    const key = String(requestKey || '').trim();
+    if (!key) return 0;
 
-    const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
-    const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
-    const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
+    const lastRow = bookingsSheet.getLastRow();
+    const lastCol = bookingsSheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) return 0;
 
-    if (!e || !e.range) throw new Error('Missing event range. Ensure this is an installable Form Submit trigger.');
+    const header = bookingsSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    const idx = indexMap_(header);
+    if (idx['BookingRequestKey'] === undefined) return 0;
 
-    const sheet = e.range.getSheet();
-    const expectedSource = getFormResponsesSheetName_();
-    if (expectedSource && sheet.getName() !== expectedSource) {
-      // Ignore events from other sheets.
-      return;
+    const values = bookingsSheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    for (var i = 0; i < values.length; i++) {
+      const existing = String(values[i][idx['BookingRequestKey']] || '').trim();
+      if (existing && existing === key) return i + 2;
     }
-    const rowIndex = e.range.getRow();
-    if (rowIndex < 2) return;
-
-    // Read the submitted response row.
-    const lastCol = sheet.getLastColumn();
-    const responseHeader = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-    const responseRow = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
-
-    // Convert response row -> normalized booking object.
-    const booking = normalizeBookingFromFormRow_(responseHeader, responseRow);
-    if (!booking.email) throw new Error('Email is empty (check your Form column name: Email ID)');
-    if (!booking.date) throw new Error('Slot Date is empty (check: Date of using lab facilities)');
-
-    // Append into Bookings tab (separate from Form Responses 1).
-    const bookingsSheet = ensureBookingSheet_();
-    appendBooking_(booking);
-    const bookingRowIndex = bookingsSheet.getLastRow();
-
-    // Store source pointers (optional).
-    const header2 = bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String);
-    const idxMap = indexMap_(header2);
-    setIfColumnExists_(bookingsSheet, bookingRowIndex, idxMap, 'SourceSheet', sheet.getName());
-    setIfColumnExists_(bookingsSheet, bookingRowIndex, idxMap, 'SourceRow', rowIndex);
-
-    // Generate PDF + email using the Bookings row.
-    sendConfirmationForBookingRow_(bookingsSheet, bookingRowIndex, {
-      templateDocId: templateDocId,
-      rootFolder: root,
-      updateMonthlyArchive: true,
-    });
+    return 0;
   }
 
-  function normalizeBookingFromFormRow_(header, row) {
-    const get = (cands) => getFieldByHeaderCandidates_(header, row, cands);
-    const name = String(get(['Name']) || '').trim();
-    const ktuId = String(get(['KTU ID', 'KTU']) || '').trim();
-    const semester = String(get(['Semester']) || '').trim();
-    const department = String(get(['Department']) || '').trim();
-    const phone = String(get(['Phone No', 'Phone', 'Phone Number']) || '').trim();
-    const email = String(get(['Email ID', 'Email', 'Email Address']) || '').trim();
-    const purpose = String(get(['Purpose/project description (brief)', 'Purpose', 'Description']) || '').trim();
-    const date = normalizeDateValue_(get(['Date of using lab facilities', 'Date']));
+  function getFormResponsesMirrorSheetName_() {
+    const configured = getFormResponsesSheetName_();
+    if (configured) return configured;
+    return 'Form Responses 1';
+  }
 
-    // Time cells from Form responses sheet are often Date objects.
-    const timeFrom = normalizeTimeValue_(get(['Time slot - From', 'TimeFrom', 'Time From']));
-    const timeTo = normalizeTimeValue_(get(['Time slot - TO', 'Time slot - To', 'TimeTo', 'Time To']));
-
-    // Raw selects
-    const categories = splitCsv_(get(['CATAGOERY', 'CATEGORY', 'Category']));
-    const machines = splitCsv_(get(['MACHINES', 'Machines', 'Machine']));
-
-    const totalText = String(get(['TOTAL ..', 'TOTAL', 'Total', 'TotalText']) || '').trim();
-
-    const independentRaw = get([
-      'Working Independently (Yes/No).\n If Yes, Training certificate no:',
+  function ensureFormResponsesMirrorSheet_(ss, sheetName) {
+    let sh = ss.getSheetByName(sheetName);
+    const defaultHeader = [
+      'Timestamp',
+      'Name',
+      'KTU ID',
+      'Phone No',
+      'Email ID',
+      'Semester',
+      'Department',
+      'Purpose/project description (brief)',
+      'CATAGOERY',
+      'MACHINES',
+      'TOTAL ..',
+      'Date of using lab facilities',
+      'Time slot - From',
+      'Time slot - TO',
       'Working Independently (Yes/No). If Yes, Training certificate no:',
-      'Working Independently (Yes/No). If Yes, Training certificate no',
-    ]);
-    const parsed = parseIndependentAndCertificate_(independentRaw);
-
-    const materialFromLabRaw = get([
       'Is material taken from the lab?',
-      'Is material taken from lab?',
-      'Is materail taken from the lab?',
-      'Material from lab',
-      'MaterialFromLab',
-      'Material required from the lab',
-    ]);
-    const materialApproxQtyRaw = get([
       'Approximate quantity of the material',
-      'Appocimate quantity of the material',
-      'Appocimate quantit y of the material',
-      'Approximate quantit y of the material',
-      'Approximate quantity',
-      'Material quantity',
-      'MaterialApproxQty',
-    ]);
-    const materialCombinedRaw = get(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
-    const materialParsed = parseMaterialRequirement_(
-      materialFromLabRaw,
-      materialApproxQtyRaw,
-      materialCombinedRaw
-    );
+    ];
 
-    return {
-      createdAtISO: new Date().toISOString(),
-      name: name,
-      ktuId: ktuId,
-      phone: phone,
-      email: email,
-      semester: semester,
-      department: department,
-      purpose: purpose,
-      date: date,
-      timeFrom: timeFrom,
-      timeTo: timeTo,
-      categories: categories,
-      machines: machines,
-      itemQty: {},
-      totalText: totalText,
-      workingIndependently: parsed.independent,
-      trainingCertificateNo: parsed.certificate,
-      materialFromLab: materialParsed.materialFromLab,
-      materialApproxQty: materialParsed.materialApproxQty,
-      materialRequirementSummary: materialParsed.materialRequirementSummary,
-    };
+    if (!sh) {
+      sh = ss.insertSheet(sheetName);
+      sh.appendRow(defaultHeader);
+      return sh;
+    }
+
+    if (sh.getLastRow() === 0) sh.appendRow(defaultHeader);
+    return sh;
+  }
+
+  function mirrorBookingToFormResponsesFromBookingRow_(bookingsSheet, bookingRowIndex) {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
+    try {
+      const lastCol = bookingsSheet.getLastColumn();
+      const bookingHeader = bookingsSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+      const bookingRow = bookingsSheet.getRange(bookingRowIndex, 1, 1, lastCol).getValues()[0];
+      const bIdx = indexMap_(bookingHeader);
+
+      const alreadyMirrored = bIdx['FormResponseMirroredAtISO'] !== undefined
+        ? String(bookingsSheet.getRange(bookingRowIndex, bIdx['FormResponseMirroredAtISO'] + 1).getValue() || '').trim()
+        : '';
+      if (alreadyMirrored) {
+        return { ok: true, skipped: true, reason: 'Already mirrored' };
+      }
+
+      const ss = SpreadsheetApp.openById(getSpreadsheetId_());
+      const targetName = getFormResponsesMirrorSheetName_();
+      const target = ensureFormResponsesMirrorSheet_(ss, targetName);
+
+      const tLastCol = target.getLastColumn();
+      const tHeader = target.getRange(1, 1, 1, tLastCol).getValues()[0].map(String);
+      const tRow = new Array(tHeader.length).fill('');
+
+      const name = String(bookingRow[bIdx['Name']] || '').trim();
+      const ktuId = String(bookingRow[bIdx['KTU ID']] || '').trim();
+      const phone = String(bookingRow[bIdx['Phone']] || '').trim();
+      const email = String(bookingRow[bIdx['Email']] || '').trim();
+      const semester = String(bookingRow[bIdx['Semester']] || '').trim();
+      const department = String(bookingRow[bIdx['Department']] || '').trim();
+      const purpose = String(bookingRow[bIdx['Purpose']] || '').trim();
+      const categories = String(bookingRow[bIdx['Categories']] || '').trim();
+      const machines = String(bookingRow[bIdx['Machines']] || '').trim();
+      const totalText = String(bookingRow[bIdx['TotalText']] || '').trim();
+      const slotDate = normalizeDateValue_(bookingRow[bIdx['Date']]);
+      const timeFrom = normalizeTimeValue_(bookingRow[bIdx['TimeFrom']]);
+      const timeTo = normalizeTimeValue_(bookingRow[bIdx['TimeTo']]);
+      const independent = String(bookingRow[bIdx['WorkingIndependently']] || '').trim();
+      const cert = String(bookingRow[bIdx['TrainingCertificateNo']] || '').trim();
+      const materialFromLab = String(bookingRow[bIdx['MaterialFromLab']] || '').trim();
+      const materialApproxQty = String(bookingRow[bIdx['MaterialApproxQty']] || '').trim();
+
+      const independentCombined =
+        /^yes$/i.test(independent) && cert
+          ? 'Yes, Training certificate no: ' + cert
+          : (independent || '');
+
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Timestamp'], new Date());
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Name'], name);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['KTU ID', 'KTU'], ktuId);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Phone No', 'Phone', 'Phone Number'], phone);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Email ID', 'Email', 'Email Address'], email);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Semester'], semester);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Department'], department);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Purpose/project description (brief)', 'Purpose', 'Description'], purpose);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['CATAGOERY', 'CATEGORY', 'Category'], categories);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['MACHINES', 'Machines'], machines);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['TOTAL ..', 'TOTAL', 'Total', 'TotalText'], totalText);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Date of using lab facilities', 'Date'], slotDate);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Time slot - From', 'TimeFrom', 'Time From'], timeFrom);
+      setFirstMatchingColumnValue_(tHeader, tRow, ['Time slot - TO', 'Time slot - To', 'TimeTo', 'Time To'], timeTo);
+      setFirstMatchingColumnValue_(
+        tHeader,
+        tRow,
+        [
+          'Working Independently (Yes/No). If Yes, Training certificate no:',
+          'Working Independently (Yes/No). If Yes, Training certificate no',
+          'Working Independently',
+        ],
+        independentCombined
+      );
+      setFirstMatchingColumnValue_(
+        tHeader,
+        tRow,
+        ['Is material taken from the lab?', 'Is material taken from lab?', 'Material from lab'],
+        materialFromLab
+      );
+      setFirstMatchingColumnValue_(
+        tHeader,
+        tRow,
+        ['Approximate quantity of the material', 'Appocimate quantity of the material', 'Material quantity'],
+        materialApproxQty
+      );
+
+      target.appendRow(tRow);
+      const mirroredRow = target.getLastRow();
+
+      const bIdx2 = indexMap_(bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String));
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx2, 'FormResponseMirroredAtISO', new Date().toISOString());
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx2, 'FormResponseMirrorStatus', 'MIRRORED');
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx2, 'FormResponseMirrorError', '');
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx2, 'FormResponseMirrorRow', mirroredRow);
+
+      return { ok: true, mirrored: true, sheetName: target.getName(), row: mirroredRow };
+    } catch (err) {
+      const msg = String(err && err.message ? err.message : err);
+      const bIdx3 = indexMap_(bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String));
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx3, 'FormResponseMirrorStatus', 'ERROR');
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, bIdx3, 'FormResponseMirrorError', msg);
+      return { ok: false, error: msg };
+    } finally {
+      lock.releaseLock();
+    }
+  }
+
+  function setFirstMatchingColumnValue_(header, outRow, candidateHeaders, value) {
+    const idx = findColumnIndexByCandidates_(header, candidateHeaders, -1);
+    if (idx >= 0) outRow[idx] = value;
   }
 
   function sendConfirmationForBookingRow_(bookingsSheet, rowIndex, opts) {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
+    try {
     opts = opts || {};
     const templateDocId = String(opts.templateDocId || '').trim();
     const root = opts.rootFolder;
@@ -1586,6 +1565,9 @@
     }
 
     return result;
+    } finally {
+      lock.releaseLock();
+    }
   }
 
   function formatTime12h_(v) {
@@ -1598,230 +1580,6 @@
     h = h % 12;
     if (h === 0) h = 12;
     return String(h) + ':' + mins + ' ' + ampm;
-  }
-
-  function processUnsentResponses(options) {
-    options = options || {};
-    const props = PropertiesService.getScriptProperties();
-    const templateDocId = String(options.templateDocId || props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
-    if (!templateDocId) throw new Error('Missing BOOKING_TEMPLATE_DOC_ID');
-
-    const rootFolderId = String(options.rootFolderId || props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
-    const rootFolderName = String(options.rootFolderName || props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
-    const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
-
-    const sheetName = String(options.sheetName || getBookingsSheetName_());
-    const limit = options.limit ? Number(options.limit) : 0;
-
-    const ss = SpreadsheetApp.openById(getSpreadsheetId_());
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) throw new Error('Missing sheet: ' + sheetName);
-
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    if (lastRow < 2 || lastCol < 1) return { ok: true, processed: 0, skipped: 0 };
-
-    // Ensure tracking columns exist.
-    const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-    ensureResponseTrackingColumns_(sheet, header);
-
-    // Refresh header after potential append.
-    const header2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-    const idx = indexMap_(header2);
-    if (idx['EmailSentAtISO'] === undefined) throw new Error('EmailSentAtISO column not found after ensuring.');
-
-    var processed = 0;
-    var skipped = 0;
-    for (var r = 2; r <= lastRow; r++) {
-      const sentAt = String(sheet.getRange(r, idx['EmailSentAtISO'] + 1).getValue() || '').trim();
-      if (sentAt) {
-        skipped++;
-        continue;
-      }
-      processResponseRow_(sheet, r, { templateDocId: templateDocId, rootFolder: root });
-      processed++;
-      if (limit && processed >= limit) break;
-    }
-
-    return { ok: true, processed: processed, skipped: skipped };
-  }
-
-  function processResponseRow_(sheet, rowIndex, opts) {
-    opts = opts || {};
-    const templateDocId = String(opts.templateDocId || '').trim();
-    const root = opts.rootFolder;
-    const updateMonthlyArchive = opts.updateMonthlyArchive === true;
-    if (!templateDocId) throw new Error('processResponseRow_: missing templateDocId');
-    if (!root) throw new Error('processResponseRow_: missing rootFolder');
-
-    const lastCol = sheet.getLastColumn();
-    if (rowIndex < 2 || lastCol < 1) return;
-
-    const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-    const row = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
-    const trackingHeader = ensureResponseTrackingColumns_(sheet, header);
-    const idx = indexMap_(trackingHeader);
-
-    // If already processed, skip.
-    if (idx['EmailSentAtISO'] !== undefined) {
-      const already = String(sheet.getRange(rowIndex, idx['EmailSentAtISO'] + 1).getValue() || '').trim();
-      if (already) return;
-    }
-
-    try {
-      const field = (cands) => getFieldByHeaderCandidates_(trackingHeader, row, cands);
-
-      const email = String(field(['Email ID', 'Email', 'Email Address', 'E-mail', 'Mail']) || '').trim();
-      const name = String(field(['Name', 'Full Name', 'Student Name']) || '').trim();
-      const slotDateRaw = field([
-        'Date of using lab facilities',
-        'Date',
-        'Slot Date',
-        'Booking Date',
-        'Date (Slot)',
-      ]);
-      const slotDate = normalizeDateValue_(slotDateRaw);
-      const timeFrom = String(
-        field(['Time slot - From', 'TimeFrom', 'Time From', 'From', 'Start Time']) || ''
-      ).trim();
-      const timeTo = String(
-        field(['Time slot - TO', 'Time slot - To', 'TimeTo', 'Time To', 'To', 'End Time']) || ''
-      ).trim();
-      const ktuId = String(field(['KTU ID', 'KTU', 'KTU Id', 'KTU_ID']) || '').trim();
-      const semester = String(field(['Semester', 'SEM', 'Sem']) || '').trim();
-      const department = String(field(['Department', 'DEPT', 'Dept']) || '').trim();
-      const phone = String(field(['Phone No', 'Phone', 'Phone Number', 'Mobile', 'Mobile Number', 'NUMBER']) || '').trim();
-      const description = String(
-        field(['Purpose/project description (brief)', 'Project Description', 'Description', 'Purpose', 'DES']) || ''
-      ).trim();
-      const equipment = String(
-        field(['TOTAL ..', 'TOTAL', 'Total', 'TotalText', 'Equipment required', 'Type of materials required', 'EQUI']) || ''
-      ).trim();
-
-      const independentRaw = field([
-        'Working Independently (Yes/No). If Yes, Training certificate no:',
-        'Working Independently (Yes/No). If Yes, Training certificate no',
-        'Working Independently',
-        'WorkingIndependently',
-      ]);
-      const parsed = parseIndependentAndCertificate_(independentRaw);
-      const independent = parsed.independent;
-      const certificate = parsed.certificate;
-
-      const materialFromLabRaw = field([
-        'Is material taken from the lab?',
-        'Is material taken from lab?',
-        'Is materail taken from the lab?',
-        'Material from lab',
-        'MaterialFromLab',
-        'Material required from the lab',
-      ]);
-      const materialApproxQtyRaw = field([
-        'Approximate quantity of the material',
-        'Appocimate quantity of the material',
-        'Appocimate quantit y of the material',
-        'Approximate quantit y of the material',
-        'Approximate quantity',
-        'Material quantity',
-        'MaterialApproxQty',
-      ]);
-      const materialCombinedRaw = field(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
-      const materialParsed = parseMaterialRequirement_(
-        materialFromLabRaw,
-        materialApproxQtyRaw,
-        materialCombinedRaw
-      );
-      const materialSummary = materialParsed.materialRequirementSummary;
-
-      if (!email) throw new Error('Email is empty (check your Form question title / column name)');
-      if (!slotDate || !/^\d{4}-\d{2}-\d{2}$/.test(slotDate)) {
-        throw new Error('Slot Date is missing/invalid. Ensure a column named Date / Slot Date exists.');
-      }
-
-      const yyyy = slotDate.slice(0, 4);
-      const mm = slotDate.slice(5, 7);
-      const dd = slotDate.slice(8, 10);
-      const yearFolder = getOrCreateChildFolder_(root, yyyy);
-      const monthFolder = getOrCreateChildFolder_(yearFolder, monthFolderName_(yyyy, mm));
-      const dayFolder = getOrCreateChildFolder_(monthFolder, dd);
-
-      const placeholders = {
-        '<<NAME>>': name,
-        '<<KTU>>': ktuId,
-        '<<SEM>>': semester,
-        '<<DEPT>>': department,
-        '<<NUMBER>>': phone,
-        '<<DES>>': description,
-        '<<EQUI>>': equipment,
-        '<<DATE>>': slotDate,
-        '<<TIMEFROM>>': timeFrom,
-        '<<TIMETO>>': timeTo,
-        '<<INDEPENDENT>>': independent,
-        '<<CERTIFICATE>>': certificate,
-        '<<quantity>>': materialSummary,
-        '<<QUANTITY>>': materialSummary,
-      };
-
-      const docName = buildPdfBaseName_(slotDate, name);
-      const templateFile = DriveApp.getFileById(templateDocId);
-      let docFile = null;
-      let pdfBlob = null;
-      let pdfFile = null;
-      try {
-        docFile = templateFile.makeCopy(docName, dayFolder);
-        const doc = DocumentApp.openById(docFile.getId());
-        try {
-          const body = doc.getBody();
-          Object.keys(placeholders).forEach((token) => {
-            body.replaceText(escapeRegexForDocReplace_(token), String(placeholders[token] || ''));
-          });
-        } finally {
-          doc.saveAndClose();
-        }
-
-        pdfBlob = DriveApp.getFileById(docFile.getId()).getBlob().setName(docName + '.pdf');
-        pdfFile = dayFolder.createFile(pdfBlob);
-      } finally {
-        if (docFile) {
-          try {
-            docFile.setTrashed(true);
-          } catch (e) {
-            // ignore cleanup errors
-          }
-        }
-      }
-
-      const subject = 'Tinkerers Lab Slot Booking Confirmation - ' + slotDate;
-      const mailBody =
-        'Hi ' +
-        (name || '') +
-        ',\n\nYour slot booking is confirmed for ' +
-        slotDate +
-        (timeFrom && timeTo ? ' ' + timeFrom + '-' + timeTo : '') +
-        '.\n\nPlease find the attached PDF.\n\nThanks,\nTinkerers Lab';
-
-      MailApp.sendEmail({
-        to: email,
-        subject: subject,
-        body: mailBody,
-        attachments: [pdfBlob],
-      });
-
-      setIfColumnExists_(sheet, rowIndex, idx, 'EmailSentAtISO', new Date().toISOString());
-      setIfColumnExists_(sheet, rowIndex, idx, 'EmailStatus', 'SENT');
-      setIfColumnExists_(sheet, rowIndex, idx, 'PdfFileId', pdfFile.getId());
-      setIfColumnExists_(sheet, rowIndex, idx, 'PdfFileUrl', pdfFile.getUrl());
-      setIfColumnExists_(sheet, rowIndex, idx, 'EmailError', '');
-
-      // Update monthly sorted spreadsheet for this month on every submission.
-      if (updateMonthlyArchive) {
-        archiveSingleMonthFromSheet_(sheet, slotDate, root);
-      }
-    } catch (err) {
-      setIfColumnExists_(sheet, rowIndex, idx, 'EmailStatus', 'ERROR');
-      setIfColumnExists_(sheet, rowIndex, idx, 'EmailError', String(err && err.message ? err.message : err));
-      throw err;
-    }
   }
 
   function archiveSingleMonthFromSheet_(masterSheet, slotDate, rootFolder) {

@@ -791,6 +791,10 @@ export default function SlotBookingPage() {
     return tools.filter((item) => set.has(item))
   }, [applicableConsumables, tools])
 
+  const hasSelectedFilamentConsumable = useMemo(() => {
+    return selectedApplicableConsumables.some((item) => materialIsFilament(item))
+  }, [selectedApplicableConsumables])
+
   function materialNeedsArea(item) {
     return /(acrylic|mdf|vinyl)/i.test(String(item || ''))
   }
@@ -888,9 +892,9 @@ export default function SlotBookingPage() {
   }, [materialFromLab])
 
   useEffect(() => {
-    if (has3DPrinterSelected) return
+    if (hasSelectedFilamentConsumable) return
     setMaterialFilamentMeters('')
-  }, [has3DPrinterSelected])
+  }, [hasSelectedFilamentConsumable])
 
   useEffect(() => {
     const selected = new Set(selectedApplicableConsumables)
@@ -909,22 +913,22 @@ export default function SlotBookingPage() {
   }, [needsMaterialQuestions, materialFromLab, materialConsumablesSummary])
 
   useEffect(() => {
-    if (!needsMaterialQuestions || materialFromLab !== 'Yes' || !has3DPrinterSelected) {
+    if (!needsMaterialQuestions || materialFromLab !== 'Yes' || !hasSelectedFilamentConsumable) {
       setMaterialFilamentMeters('')
       return
     }
     const total = materialFilamentMetersTotal
     setMaterialFilamentMeters(total > 0 ? String(Number(total.toFixed(2))) : '')
-  }, [needsMaterialQuestions, materialFromLab, has3DPrinterSelected, materialFilamentMetersTotal])
+  }, [needsMaterialQuestions, materialFromLab, hasSelectedFilamentConsumable, materialFilamentMetersTotal])
 
   const materialRequirementSummary = useMemo(() => {
     if (!needsMaterialQuestions) return 'Not applicable'
     if (materialFromLab !== 'Yes') return 'No'
     const qty = (materialConsumablesSummary || materialApproxQty).trim()
     const filamentMeters = materialFilamentMeters.trim()
-    const filamentSuffix = has3DPrinterSelected && filamentMeters ? `; Filament: ${filamentMeters} m` : ''
+    const filamentSuffix = hasSelectedFilamentConsumable && filamentMeters ? `; Filament: ${filamentMeters} m` : ''
     return qty ? `Yes - ${qty}${filamentSuffix}` : `Yes - Quantity not provided${filamentSuffix}`
-  }, [needsMaterialQuestions, materialFromLab, materialApproxQty, materialConsumablesSummary, has3DPrinterSelected, materialFilamentMeters])
+  }, [needsMaterialQuestions, materialFromLab, materialApproxQty, materialConsumablesSummary, hasSelectedFilamentConsumable, materialFilamentMeters])
 
   const hasInvalidMaterialSpecs = useMemo(() => {
     if (!needsMaterialQuestions || materialFromLab !== 'Yes') return false
@@ -1095,8 +1099,8 @@ export default function SlotBookingPage() {
       setSheetError('Enter meters only for filament materials and area for acrylic/MDF/vinyl materials.')
       return
     }
-    if (needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected && !(Number(materialFilamentMeters) > 0)) {
-      setSheetError('Enter approximate filament quantity in meters for selected 3D printer.')
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && hasSelectedFilamentConsumable && !(Number(materialFilamentMeters) > 0)) {
+      setSheetError('Enter filament quantity in meters only for selected filament consumables.')
       return
     }
 
@@ -1119,7 +1123,7 @@ export default function SlotBookingPage() {
       trainingCertificateNo: trainingCertificateNo.trim(),
       materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
       materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
-      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected ? String(materialFilamentMeters).trim() : '',
+      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && hasSelectedFilamentConsumable ? String(materialFilamentMeters).trim() : '',
       materialRequirementSummary,
     }
 
@@ -1251,7 +1255,7 @@ export default function SlotBookingPage() {
     if (needsMaterialQuestions && materialFromLab === 'Yes' && !selectedApplicableConsumables.length) return false
     if (needsMaterialQuestions && materialFromLab === 'Yes' && hasInvalidMaterialSpecs) return false
     if (needsMaterialQuestions && materialFromLab === 'Yes' && !materialConsumablesSummary.trim()) return false
-    if (needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected && !(Number(materialFilamentMeters) > 0)) return false
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && hasSelectedFilamentConsumable && !(Number(materialFilamentMeters) > 0)) return false
 
     if (workingIndependently === 'Yes' && !trainingCertificateNo.trim()) return false
 
@@ -1285,7 +1289,7 @@ export default function SlotBookingPage() {
     materialItemSpecs,
     materialFilamentMeters,
     hasInvalidMaterialSpecs,
-    has3DPrinterSelected,
+    hasSelectedFilamentConsumable,
     selectedApplicableConsumables,
     materialConsumablesSummary,
     sheetResult,
@@ -1366,7 +1370,7 @@ export default function SlotBookingPage() {
       trainingCertificateNo: trainingCertificateNo.trim(),
       materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
       materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
-      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected ? String(materialFilamentMeters).trim() : '',
+      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && hasSelectedFilamentConsumable ? String(materialFilamentMeters).trim() : '',
       materialRequirementSummary,
       createdAt: new Date().toISOString(),
     }
@@ -1402,13 +1406,21 @@ export default function SlotBookingPage() {
       .then(({ ok, appsScriptOk }) => {
         if (!ok) return
 
-        // 2) Google Form submit (optional fallback)
-        if (!configured) {
-          if (appsScriptConfigured) {
-            showSubmitPopup(booking.email)
-            onClearSheet()
+        // Single-source write path: when Apps Script is configured, do NOT also
+        // submit to Google Form, otherwise the same booking can be processed twice.
+        if (appsScriptConfigured) {
+          if (!appsScriptOk) {
+            setError('Apps Script save failed. Google Form fallback is disabled to prevent duplicate bookings.')
+            submitBtnRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
             return
           }
+          showSubmitPopup(booking.email)
+          onClearSheet()
+          return
+        }
+
+        // 2) Google Form submit (only when Apps Script is not configured)
+        if (!configured) {
           setError(
             'Google Form submission is not configured yet. Send me the Google Form prefilled link and I will map the entry IDs.'
           )
@@ -1762,7 +1774,7 @@ export default function SlotBookingPage() {
                             <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
                               Synced total consumables quantity: {materialConsumablesTotalQty}
                             </div>
-                            {has3DPrinterSelected ? (
+                            {hasSelectedFilamentConsumable ? (
                               <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
                                 Total filament from selected spool materials: {materialFilamentMeters || '0'} m
                               </div>
