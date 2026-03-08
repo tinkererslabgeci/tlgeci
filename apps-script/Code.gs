@@ -1628,32 +1628,10 @@
     return String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  function ensureResponseTrackingColumns_(sheet, header) {
-    const needed = ['EmailSentAtISO', 'EmailStatus', 'EmailError', 'PdfFileId', 'PdfFileUrl'];
-    let out = header.slice();
-    let changed = false;
-    for (var i = 0; i < needed.length; i++) {
-      if (indexOfHeader_(out, needed[i]) >= 0) continue;
-      out.push(needed[i]);
-      changed = true;
-    }
-    if (!changed) return header;
-    sheet.getRange(1, 1, 1, out.length).setValues([out]);
-    return out;
-  }
-
   function setIfColumnExists_(sheet, rowIndex, idxMap, colName, value) {
     const i = idxMap[colName];
     if (i === undefined) return;
     sheet.getRange(rowIndex, i + 1).setValue(value);
-  }
-
-  function getFieldByHeaderCandidates_(header, row, candidates) {
-    for (var i = 0; i < candidates.length; i++) {
-      const idx = indexOfHeader_(header, candidates[i]);
-      if (idx >= 0) return row[idx];
-    }
-    return '';
   }
 
   function findColumnIndexByCandidates_(header, candidates, fallbackIndex) {
@@ -1664,68 +1642,6 @@
     return typeof fallbackIndex === 'number' ? fallbackIndex : -1;
   }
 
-  function parseIndependentAndCertificate_(raw) {
-    const s = String(raw || '').trim();
-    if (!s) return { independent: '', certificate: '' };
-
-    // Common patterns:
-    // "Yes\nCERT123" | "Yes - CERT123" | "No" | "Yes, CERT123"
-    const parts = s
-      .split(/\n|,|;|\-|—/g)
-      .map((x) => String(x || '').trim())
-      .filter(Boolean);
-
-    let independent = '';
-    let certificate = '';
-
-    if (parts.length > 0) independent = parts[0];
-    if (parts.length > 1) certificate = parts.slice(1).join(' ');
-
-    // If not split nicely, try to extract a likely certificate token.
-    if (!certificate && /yes/i.test(independent)) {
-      const m = /\b([A-Za-z0-9_-]{4,})\b/.exec(s);
-      if (m) certificate = m[1];
-    }
-
-    // Normalize independent to Yes/No if possible.
-    if (/^y(es)?\b/i.test(independent)) independent = 'Yes';
-    else if (/^n(o)?\b/i.test(independent)) independent = 'No';
-
-    return { independent: independent, certificate: certificate };
-  }
-
-  function parseMaterialRequirement_(fromLabRaw, approxQtyRaw, combinedRaw) {
-    let fromLab = String(fromLabRaw || '').trim();
-    let approxQty = String(approxQtyRaw || '').trim();
-    const combined = String(combinedRaw || '').trim();
-
-    if ((!fromLab && !approxQty) && combined) {
-      if (/^no\b/i.test(combined)) {
-        fromLab = 'No';
-        approxQty = '';
-      } else if (/^yes\b/i.test(combined)) {
-        fromLab = 'Yes';
-        const mYes = /^yes\s*[-,:]?\s*(.*)$/i.exec(combined);
-        approxQty = mYes && mYes[1] ? String(mYes[1]).trim() : '';
-      } else {
-        const m = /^(yes|no)\s*[-,:]?\s*(.*)$/i.exec(combined);
-        if (m) {
-          fromLab = /^yes$/i.test(m[1]) ? 'Yes' : 'No';
-          approxQty = String(m[2] || '').trim();
-        }
-      }
-    }
-
-    if (/^y(es)?$/i.test(fromLab)) fromLab = 'Yes';
-    else if (/^n(o)?$/i.test(fromLab)) fromLab = 'No';
-
-    const materialRequirementSummary = buildMaterialRequirementSummary_(fromLab, approxQty);
-    return {
-      materialFromLab: fromLab,
-      materialApproxQty: approxQty,
-      materialRequirementSummary: materialRequirementSummary,
-    };
-  }
 
   function indexOfHeader_(header, name) {
     const needle = normalizeHeaderKey_(name);
