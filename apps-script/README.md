@@ -53,6 +53,10 @@ The script will write this automatically with these columns:
 - `TotalText` (the raw long-answer text, e.g. `ARDUINO UNO x2, HAND DRILL x1`)
 - `WorkingIndependently`
 - `TrainingCertificateNo`
+- `MaterialFromLab`
+- `MaterialApproxQty`
+- `MaterialFilamentMeters`
+- `MaterialRequirementSummary`
 
 ## Deploy
 1. Go to https://script.google.com/ and create a new project.
@@ -228,6 +232,7 @@ These sheet columns are used to fill your Google Doc template tokens:
 - `Time slot - From` → `<<TIMEFROM>>`
 - `Time slot - TO` → `<<TIMETO>>`
 - `Working Independently (Yes/No)...` → `<<INDEPENDENT>>` and `<<CERTIFICATE>>` (the script splits Yes/No and certificate if present)
+- `Approximate filament required (meters)` (if present) → stored as `MaterialFilamentMeters` in `Bookings`
 
 ### Remove the trigger (if needed)
 ```js

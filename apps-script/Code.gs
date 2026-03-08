@@ -149,13 +149,65 @@
     if (!result2.ok) return result2;
 
     appendBooking_(normalized);
-    return {
+
+    const out = {
       ok: true,
       message: 'Booking accepted and stored.',
       inventoryLeft: result2.inventoryLeft,
       suggestions: result2.suggestions,
       conflicts: [],
     };
+
+    // For web-app API bookings, also try PDF generation + email directly.
+    // This makes API submissions independent from Form submit triggers.
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
+      const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
+      const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
+      const bookingsSheet = ensureBookingSheet_();
+      const bookingRowIndex = bookingsSheet.getLastRow();
+      const header = bookingsSheet.getRange(1, 1, 1, bookingsSheet.getLastColumn()).getValues()[0].map(String);
+      const idx = indexMap_(header);
+
+      if (!templateDocId) {
+        setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'EmailStatus', 'SKIPPED');
+        setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'EmailError', 'BOOKING_TEMPLATE_DOC_ID is not set in Script Properties.');
+        out.pdfEmail = {
+          ok: false,
+          skipped: true,
+          reason: 'BOOKING_TEMPLATE_DOC_ID is not set in Script Properties.',
+        };
+      } else {
+        const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
+        const confirmResult = sendConfirmationForBookingRow_(bookingsSheet, bookingRowIndex, {
+          templateDocId: templateDocId,
+          rootFolder: root,
+          updateMonthlyArchive: true,
+        });
+
+        out.pdfEmail = confirmResult && confirmResult.email
+          ? confirmResult.email
+          : { ok: !!(confirmResult && confirmResult.ok) };
+
+        out.calendar = confirmResult && confirmResult.calendar
+          ? confirmResult.calendar
+          : undefined;
+
+        if (!confirmResult || confirmResult.ok !== true) {
+          out.ok = false;
+          out.message = 'Booking accepted and stored, but PDF/email or calendar sync failed.';
+        }
+      }
+    } catch (err) {
+      out.pdfEmail = {
+        ok: false,
+        error: String(err && err.message ? err.message : err),
+      };
+      out.message = 'Booking accepted and stored, but PDF/email failed.';
+    }
+
+    return out;
   }
 
   function normalizeBooking_(b) {
@@ -183,7 +235,10 @@
     };
 
     if (!booking.materialRequirementSummary) {
-      booking.materialRequirementSummary = buildMaterialRequirementSummary_(booking.materialFromLab, booking.materialApproxQty);
+      booking.materialRequirementSummary = buildMaterialRequirementSummary_(
+        booking.materialFromLab,
+        booking.materialApproxQty
+      );
     }
 
     return booking;
@@ -193,7 +248,7 @@
     const fromLab = String(materialFromLab || '').trim();
     const qty = String(materialApproxQty || '').trim();
     if (/^y(es)?$/i.test(fromLab)) {
-      return qty ? 'Yes - ' + qty : 'Yes - Quantity not provided';
+      return qty ? 'Yes - ' + qty : 'Yes';
     }
     if (/^n(o)?$/i.test(fromLab)) return 'No';
     if (!fromLab && !qty) return 'Not applicable';
@@ -657,6 +712,19 @@
       'MaterialFromLab',
       'MaterialApproxQty',
       'MaterialRequirementSummary',
+      // Tracking columns for PDF/email automation (stored in Bookings tab).
+      'EmailSentAtISO',
+      'EmailStatus',
+      'EmailError',
+      'PdfFileId',
+      'PdfFileUrl',
+      // Calendar sync tracking (single calendar, one event per machine)
+      'CalendarSyncedAtISO',
+      'CalendarStatus',
+      'CalendarError',
+      'CalendarEventIdsJSON',
+      'SourceSheet',
+      'SourceRow',
     ];
 
     if (sh.getLastRow() === 0) {
@@ -671,33 +739,61 @@
         changed = true;
       }
 
-      // Tracking columns for PDF/email automation (stored in Bookings tab, not in Form Responses tab).
-      const tracking = [
-        'EmailSentAtISO',
-        'EmailStatus',
-        'EmailError',
-        'PdfFileId',
-        'PdfFileUrl',
-        // Calendar sync tracking (single calendar, one event per machine)
-        'CalendarSyncedAtISO',
-        'CalendarStatus',
-        'CalendarError',
-        'CalendarEventIdsJSON',
-        'SourceSheet',
-        'SourceRow',
-      ];
-      for (var t = 0; t < tracking.length; t++) {
-        if (existingHeader.indexOf(tracking[t]) >= 0) continue;
-        existingHeader.push(tracking[t]);
-        changed = true;
-      }
-
       if (changed) {
         sh.getRange(1, 1, 1, existingHeader.length).setValues([existingHeader]);
       }
     }
 
     return sh;
+  }
+
+  /**
+   * Manual helper: retry confirmation (PDF/email + calendar) for the latest row in Bookings.
+   * Run from Apps Script editor after fixing Script Properties/permissions.
+   */
+  function retryLatestBookingConfirmation() {
+    const props = PropertiesService.getScriptProperties();
+    const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
+    if (!templateDocId) throw new Error('Missing Script Property BOOKING_TEMPLATE_DOC_ID');
+
+    const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
+    const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
+    const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
+
+    const sheet = ensureBookingSheet_();
+    const rowIndex = sheet.getLastRow();
+    if (rowIndex < 2) throw new Error('No booking rows found in Bookings sheet.');
+
+    return sendConfirmationForBookingRow_(sheet, rowIndex, {
+      templateDocId: templateDocId,
+      rootFolder: root,
+      updateMonthlyArchive: true,
+    });
+  }
+
+  /**
+   * Manual helper: retry confirmation for a specific Bookings row index.
+   */
+  function retryBookingConfirmationByRow(rowIndex) {
+    const row = Number(rowIndex);
+    if (!isFinite(row) || row < 2) throw new Error('rowIndex must be a row number >= 2.');
+
+    const props = PropertiesService.getScriptProperties();
+    const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
+    if (!templateDocId) throw new Error('Missing Script Property BOOKING_TEMPLATE_DOC_ID');
+
+    const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
+    const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
+    const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
+
+    const sheet = ensureBookingSheet_();
+    if (row > sheet.getLastRow()) throw new Error('rowIndex is beyond last row in Bookings sheet.');
+
+    return sendConfirmationForBookingRow_(sheet, row, {
+      templateDocId: templateDocId,
+      rootFolder: root,
+      updateMonthlyArchive: true,
+    });
   }
 
   function normalizeCalendarId_(raw) {
@@ -826,29 +922,39 @@
 
   function appendBooking_(b) {
     const sh = ensureBookingSheet_();
+    const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const idx = indexMap_(header);
     const materialSummary = buildMaterialRequirementSummary_(b.materialFromLab, b.materialApproxQty);
-    sh.appendRow([
-      b.createdAtISO,
-      b.name,
-      b.ktuId,
-      b.phone,
-      b.email,
-      b.semester,
-      b.department,
-      b.purpose,
-      b.date,
-      b.timeFrom,
-      b.timeTo,
-      (b.categories || []).join(', '),
-      (b.machines || []).join(', '),
-      JSON.stringify(b.itemQty || {}),
-      b.totalText || '',
-      b.workingIndependently,
-      b.trainingCertificateNo,
-      b.materialFromLab || '',
-      b.materialApproxQty || '',
-      b.materialRequirementSummary || materialSummary,
-    ]);
+    const row = new Array(header.length).fill('');
+
+    function setCol(name, value) {
+      const col = idx[name];
+      if (col === undefined) return;
+      row[col] = value;
+    }
+
+    setCol('CreatedAtISO', b.createdAtISO || new Date().toISOString());
+    setCol('Name', b.name || '');
+    setCol('KTU ID', b.ktuId || '');
+    setCol('Phone', b.phone || '');
+    setCol('Email', b.email || '');
+    setCol('Semester', b.semester || '');
+    setCol('Department', b.department || '');
+    setCol('Purpose', b.purpose || '');
+    setCol('Date', b.date || '');
+    setCol('TimeFrom', b.timeFrom || '');
+    setCol('TimeTo', b.timeTo || '');
+    setCol('Categories', (b.categories || []).join(', '));
+    setCol('Machines', (b.machines || []).join(', '));
+    setCol('ItemQuantitiesJSON', JSON.stringify(b.itemQty || {}));
+    setCol('TotalText', b.totalText || '');
+    setCol('WorkingIndependently', b.workingIndependently || '');
+    setCol('TrainingCertificateNo', b.trainingCertificateNo || '');
+    setCol('MaterialFromLab', b.materialFromLab || '');
+    setCol('MaterialApproxQty', b.materialApproxQty || '');
+    setCol('MaterialRequirementSummary', b.materialRequirementSummary || materialSummary);
+
+    sh.appendRow(row);
   }
 
   function jsonOut_(obj) {
@@ -1248,12 +1354,18 @@
     const materialApproxQtyRaw = get([
       'Approximate quantity of the material',
       'Appocimate quantity of the material',
+      'Appocimate quantit y of the material',
+      'Approximate quantit y of the material',
       'Approximate quantity',
       'Material quantity',
       'MaterialApproxQty',
     ]);
     const materialCombinedRaw = get(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
-    const materialParsed = parseMaterialRequirement_(materialFromLabRaw, materialApproxQtyRaw, materialCombinedRaw);
+    const materialParsed = parseMaterialRequirement_(
+      materialFromLabRaw,
+      materialApproxQtyRaw,
+      materialCombinedRaw
+    );
 
     return {
       createdAtISO: new Date().toISOString(),
@@ -1298,7 +1410,13 @@
     const calAlready = idx['CalendarSyncedAtISO'] !== undefined
       ? String(bookingsSheet.getRange(rowIndex, idx['CalendarSyncedAtISO'] + 1).getValue() || '').trim()
       : '';
-    if (emailAlready && calAlready) return;
+    if (emailAlready && calAlready) {
+      return {
+        ok: true,
+        email: { skipped: true, reason: 'Already sent' },
+        calendar: { skipped: true, reason: 'Already synced' },
+      };
+    }
 
     const name = String(row[idx['Name']] || '').trim();
     const ktuId = String(row[idx['KTU ID']] || '').trim();
@@ -1321,10 +1439,12 @@
       idx['MaterialFromLab'] !== undefined ? String(row[idx['MaterialFromLab']] || '').trim() : '';
     const materialApproxQty =
       idx['MaterialApproxQty'] !== undefined ? String(row[idx['MaterialApproxQty']] || '').trim() : '';
-    const materialSummary =
+    const materialSummaryRaw =
       idx['MaterialRequirementSummary'] !== undefined
         ? String(row[idx['MaterialRequirementSummary']] || '').trim()
-        : buildMaterialRequirementSummary_(materialFromLab, materialApproxQty);
+        : '';
+    const materialSummary = materialSummaryRaw ||
+      buildMaterialRequirementSummary_(materialFromLab, materialApproxQty);
 
     if (!slotDate) throw new Error('Booking row missing Date');
 
@@ -1353,13 +1473,21 @@
     };
 
     const baseName = buildPdfBaseName_(slotDate, name);
-    // 1) PDF + Email (only if not already sent)
-    if (!emailAlready) {
-      if (!email) throw new Error('Booking row missing Email');
+    const result = {
+      ok: true,
+      email: { skipped: false, sent: false },
+      calendar: { skipped: false, synced: false },
+    };
 
+    // 1) PDF + Email (only if not already sent)
+    if (emailAlready) {
+      result.email = { skipped: true, reason: 'Already sent', sent: true };
+    } else {
       const templateFile = DriveApp.getFileById(templateDocId);
       let docFile = null;
       try {
+        if (!email) throw new Error('Booking row missing Email');
+
         // Create a temporary Doc copy, export to PDF, then trash the Doc.
         docFile = templateFile.makeCopy(baseName, dayFolder);
         const doc = DocumentApp.openById(docFile.getId());
@@ -1393,6 +1521,13 @@
         setIfColumnExists_(bookingsSheet, rowIndex, idx, 'EmailError', '');
         setIfColumnExists_(bookingsSheet, rowIndex, idx, 'PdfFileId', pdfFile.getId());
         setIfColumnExists_(bookingsSheet, rowIndex, idx, 'PdfFileUrl', pdfFile.getUrl());
+        result.email = { skipped: false, sent: true, pdfFileId: pdfFile.getId(), pdfFileUrl: pdfFile.getUrl() };
+      } catch (err) {
+        const msg = String(err && err.message ? err.message : err);
+        setIfColumnExists_(bookingsSheet, rowIndex, idx, 'EmailStatus', 'ERROR');
+        setIfColumnExists_(bookingsSheet, rowIndex, idx, 'EmailError', msg);
+        result.ok = false;
+        result.email = { skipped: false, sent: false, error: msg };
       } finally {
         if (docFile) {
           try {
@@ -1405,7 +1540,9 @@
     }
 
     // 2) Calendar sync (only if not already synced)
-    if (!calAlready) {
+    if (calAlready) {
+      result.calendar = { skipped: true, reason: 'Already synced', synced: true };
+    } else {
       try {
         const calResult = syncLabCalendarForBooking_({
           date: slotDate,
@@ -1417,21 +1554,38 @@
         if (!calResult || calResult.ok !== true) {
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarStatus', 'ERROR');
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarError', String(calResult && calResult.error ? calResult.error : 'Calendar sync failed'));
+          result.ok = false;
+          result.calendar = {
+            skipped: false,
+            synced: false,
+            error: String(calResult && calResult.error ? calResult.error : 'Calendar sync failed'),
+          };
         } else {
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarSyncedAtISO', new Date().toISOString());
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarStatus', 'SYNCED');
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarError', '');
           setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarEventIdsJSON', JSON.stringify(calResult.eventIdsByMachine || {}));
+          result.calendar = {
+            skipped: false,
+            synced: true,
+            calendarId: calResult.calendarId || '',
+            created: Number(calResult.created || 0),
+          };
         }
       } catch (err) {
+        const msg2 = String(err && err.message ? err.message : err);
         setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarStatus', 'ERROR');
-        setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarError', String(err && err.message ? err.message : err));
+        setIfColumnExists_(bookingsSheet, rowIndex, idx, 'CalendarError', msg2);
+        result.ok = false;
+        result.calendar = { skipped: false, synced: false, error: msg2 };
       }
     }
 
     if (updateMonthlyArchive) {
       archiveSingleMonthFromSheet_(bookingsSheet, slotDate, root);
     }
+
+    return result;
   }
 
   function formatTime12h_(v) {
@@ -1565,12 +1719,18 @@
       const materialApproxQtyRaw = field([
         'Approximate quantity of the material',
         'Appocimate quantity of the material',
+        'Appocimate quantit y of the material',
+        'Approximate quantit y of the material',
         'Approximate quantity',
         'Material quantity',
         'MaterialApproxQty',
       ]);
       const materialCombinedRaw = field(['quantity', '<<quantity>>', '<<QUANTITY>>', 'MaterialRequirementSummary']);
-      const materialParsed = parseMaterialRequirement_(materialFromLabRaw, materialApproxQtyRaw, materialCombinedRaw);
+      const materialParsed = parseMaterialRequirement_(
+        materialFromLabRaw,
+        materialApproxQtyRaw,
+        materialCombinedRaw
+      );
       const materialSummary = materialParsed.materialRequirementSummary;
 
       if (!email) throw new Error('Email is empty (check your Form question title / column name)');
@@ -1834,32 +1994,12 @@
     return out;
   }
 
-  function buildOutputBaseName_(name, yyyyMmDd, timeFrom) {
-    const safeName = sanitizeFilePart_(name || 'Booking');
-    const safeFrom = sanitizeFilePart_(String(timeFrom || '').replace(':', ''));
-    return (
-      'Booking-' +
-      safeName +
-      '-' +
-      String(yyyyMmDd || '') +
-      (safeFrom ? '-' + safeFrom : '')
-    ).slice(0, 120);
-  }
-
   function sanitizeFilePart_(s) {
     return String(s || '')
       .trim()
       .replace(/[\\/:*?"<>|#%&{}\[\]~]/g, '-')
       .replace(/\s+/g, ' ')
       .slice(0, 80);
-  }
-
-  function applyTemplate_(text, placeholders) {
-    let out = String(text || '');
-    Object.keys(placeholders || {}).forEach((k) => {
-      out = out.split('{{' + k + '}}').join(String(placeholders[k] || ''));
-    });
-    return out;
   }
 
   function getOrCreateFolderInRoot_(name) {

@@ -39,6 +39,7 @@ const GOOGLE_FORM_ENTRY = {
   // New Google Form fields (fill from prefilled link if needed)
   materialFromLab: '673444253',
   materialApproxQty: '2057421952',
+  materialFilamentMeters: '',
   // Long-answer question: "TOTAL" (all selected equipments with quantities)
   // Fill this with the entry id from your new prefilled link.
   total: '1262383128',
@@ -683,6 +684,8 @@ export default function SlotBookingPage() {
   const [trainingCertificateNo, setTrainingCertificateNo] = useState('')
   const [materialFromLab, setMaterialFromLab] = useState('No')
   const [materialApproxQty, setMaterialApproxQty] = useState('')
+  const [materialItemSpecs, setMaterialItemSpecs] = useState({})
+  const [materialFilamentMeters, setMaterialFilamentMeters] = useState('')
   const [error, setError] = useState('')
   const [sheetStatus, setSheetStatus] = useState('')
   const [sheetError, setSheetError] = useState('')
@@ -749,6 +752,10 @@ export default function SlotBookingPage() {
     return machines.filter((machine) => materialMachinePattern.test(machine))
   }, [machines])
 
+  const has3DPrinterSelected = useMemo(() => {
+    return materialEligibleMachines.some((machine) => /3d printer/i.test(machine))
+  }, [materialEligibleMachines])
+
   const needsMaterialQuestions = materialEligibleMachines.length > 0
 
   const applicableConsumables = useMemo(() => {
@@ -784,35 +791,149 @@ export default function SlotBookingPage() {
     return tools.filter((item) => set.has(item))
   }, [applicableConsumables, tools])
 
+  function materialNeedsArea(item) {
+    return /(acrylic|mdf|vinyl)/i.test(String(item || ''))
+  }
+
+  function materialIsFilament(item) {
+    return /3d printer spool/i.test(String(item || ''))
+  }
+
+  function materialNeedsMeters(item) {
+    return materialIsFilament(item)
+  }
+
+  function normalizeDecimal(n) {
+    const v = Number(n)
+    if (!Number.isFinite(v)) return 0
+    return Math.max(0, v)
+  }
+
+  function setMaterialSpecForItem(item, key, value) {
+    const nextValue = String(value || '').trim()
+    setMaterialItemSpecs((prev) => ({
+      ...prev,
+      [item]: {
+        ...(prev[item] || {}),
+        [key]: nextValue,
+      },
+    }))
+  }
+
+  function getMaterialSpecForItem(item, key) {
+    return String(materialItemSpecs?.[item]?.[key] || '').trim()
+  }
+
   const materialConsumablesSummary = useMemo(() => {
     if (!selectedApplicableConsumables.length) return ''
     return selectedApplicableConsumables
-      .map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`)
+      .map((it) => {
+        const qty = normalizeItemQty(itemQty[it] ?? 1) || 1
+        const meters = getMaterialSpecForItem(it, 'meters')
+        const area = getMaterialSpecForItem(it, 'area')
+        const metersPart = materialNeedsMeters(it) && meters ? `, ${meters} m` : ''
+        const areaPart = materialNeedsArea(it) && area ? `, ${area} sq.cm` : ''
+        return `${it} x${qty}${metersPart}${areaPart}`
+      })
       .join(', ')
+  }, [selectedApplicableConsumables, itemQty, materialItemSpecs])
+
+  const toolsItemsForTotal = useMemo(() => {
+    const out = []
+    const seen = new Set()
+
+    const add = (item) => {
+      const key = String(item || '').trim()
+      if (!key || seen.has(key)) return
+      seen.add(key)
+      out.push(key)
+    }
+
+    if (categories.includes('TOOLS')) {
+      for (const it of tools) add(it)
+    }
+    if (needsMaterialQuestions && materialFromLab === 'Yes') {
+      for (const it of selectedApplicableConsumables) add(it)
+    }
+
+    return out
+  }, [categories, tools, needsMaterialQuestions, materialFromLab, selectedApplicableConsumables])
+
+  const materialConsumablesTotalQty = useMemo(() => {
+    if (!selectedApplicableConsumables.length) return 0
+    return selectedApplicableConsumables.reduce((sum, it) => sum + (normalizeItemQty(itemQty[it] ?? 1) || 1), 0)
   }, [selectedApplicableConsumables, itemQty])
+
+  const materialFilamentMetersTotal = useMemo(() => {
+    if (!selectedApplicableConsumables.length) return 0
+    return selectedApplicableConsumables.reduce((sum, it) => {
+      if (!materialIsFilament(it)) return sum
+      return sum + normalizeDecimal(getMaterialSpecForItem(it, 'meters'))
+    }, 0)
+  }, [selectedApplicableConsumables, materialItemSpecs])
 
   useEffect(() => {
     if (needsMaterialQuestions) return
     setMaterialFromLab('No')
     setMaterialApproxQty('')
+    setMaterialItemSpecs({})
+    setMaterialFilamentMeters('')
   }, [needsMaterialQuestions])
 
   useEffect(() => {
     if (materialFromLab === 'Yes') return
     setMaterialApproxQty('')
+    setMaterialItemSpecs({})
+    setMaterialFilamentMeters('')
   }, [materialFromLab])
+
+  useEffect(() => {
+    if (has3DPrinterSelected) return
+    setMaterialFilamentMeters('')
+  }, [has3DPrinterSelected])
+
+  useEffect(() => {
+    const selected = new Set(selectedApplicableConsumables)
+    setMaterialItemSpecs((prev) => {
+      const next = {}
+      for (const key of Object.keys(prev || {})) {
+        if (selected.has(key)) next[key] = prev[key]
+      }
+      return next
+    })
+  }, [selectedApplicableConsumables])
 
   useEffect(() => {
     if (!needsMaterialQuestions || materialFromLab !== 'Yes') return
     setMaterialApproxQty(materialConsumablesSummary)
   }, [needsMaterialQuestions, materialFromLab, materialConsumablesSummary])
 
+  useEffect(() => {
+    if (!needsMaterialQuestions || materialFromLab !== 'Yes' || !has3DPrinterSelected) {
+      setMaterialFilamentMeters('')
+      return
+    }
+    const total = materialFilamentMetersTotal
+    setMaterialFilamentMeters(total > 0 ? String(Number(total.toFixed(2))) : '')
+  }, [needsMaterialQuestions, materialFromLab, has3DPrinterSelected, materialFilamentMetersTotal])
+
   const materialRequirementSummary = useMemo(() => {
     if (!needsMaterialQuestions) return 'Not applicable'
     if (materialFromLab !== 'Yes') return 'No'
     const qty = (materialConsumablesSummary || materialApproxQty).trim()
-    return qty ? `Yes - ${qty}` : 'Yes - Quantity not provided'
-  }, [needsMaterialQuestions, materialFromLab, materialApproxQty, materialConsumablesSummary])
+    const filamentMeters = materialFilamentMeters.trim()
+    const filamentSuffix = has3DPrinterSelected && filamentMeters ? `; Filament: ${filamentMeters} m` : ''
+    return qty ? `Yes - ${qty}${filamentSuffix}` : `Yes - Quantity not provided${filamentSuffix}`
+  }, [needsMaterialQuestions, materialFromLab, materialApproxQty, materialConsumablesSummary, has3DPrinterSelected, materialFilamentMeters])
+
+  const hasInvalidMaterialSpecs = useMemo(() => {
+    if (!needsMaterialQuestions || materialFromLab !== 'Yes') return false
+    for (const it of selectedApplicableConsumables) {
+      if (materialNeedsMeters(it) && !(normalizeDecimal(getMaterialSpecForItem(it, 'meters')) > 0)) return true
+      if (materialNeedsArea(it) && !(normalizeDecimal(getMaterialSpecForItem(it, 'area')) > 0)) return true
+    }
+    return false
+  }, [needsMaterialQuestions, materialFromLab, selectedApplicableConsumables, materialItemSpecs])
 
   function onApplicableConsumablesChange(nextApplicable) {
     const dedupedApplicable = Array.from(new Set(nextApplicable))
@@ -871,22 +992,10 @@ export default function SlotBookingPage() {
       )
     }
 
-    if (categories.includes('TOOLS') && tools.length) {
+    if (toolsItemsForTotal.length) {
       lines.push(
-        `TOOLS / SAFETY / CONSUMABLES: ${tools.map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`).join(', ')}`
+        `TOOLS / SAFETY / CONSUMABLES: ${toolsItemsForTotal.map((it) => `${it} x${normalizeItemQty(itemQty[it] ?? 1) || 1}`).join(', ')}`
       )
-    }
-
-    if (needsMaterialQuestions && materialFromLab === 'Yes' && materialConsumablesSummary) {
-      lines.push(`MATERIAL CONSUMABLES: ${materialConsumablesSummary}`)
-    }
-
-    if (needsMaterialQuestions) {
-      lines.push(`MATERIAL FROM LAB: ${materialRequirementSummary}`)
-    }
-
-    if (categories.includes(NONE_CATEGORY) && categories.length === 1) {
-      lines.push('CATEGORY: NONE')
     }
 
     return lines.join('\n')
@@ -896,11 +1005,8 @@ export default function SlotBookingPage() {
     electronicComponents,
     powerTools,
     tools,
+    toolsItemsForTotal,
     itemQty,
-    needsMaterialQuestions,
-    materialFromLab,
-    materialConsumablesSummary,
-    materialRequirementSummary,
   ])
 
   async function callAppsScript({ commit, booking }) {
@@ -981,6 +1087,18 @@ export default function SlotBookingPage() {
         return
       }
     }
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && !selectedApplicableConsumables.length) {
+      setSheetError('Select applicable consumables and quantity when taking material from lab.')
+      return
+    }
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && hasInvalidMaterialSpecs) {
+      setSheetError('Enter meters only for filament materials and area for acrylic/MDF/vinyl materials.')
+      return
+    }
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected && !(Number(materialFilamentMeters) > 0)) {
+      setSheetError('Enter approximate filament quantity in meters for selected 3D printer.')
+      return
+    }
 
     const bookingForCheck = {
       name: name.trim(),
@@ -1001,6 +1119,7 @@ export default function SlotBookingPage() {
       trainingCertificateNo: trainingCertificateNo.trim(),
       materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
       materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
+      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected ? String(materialFilamentMeters).trim() : '',
       materialRequirementSummary,
     }
 
@@ -1130,7 +1249,9 @@ export default function SlotBookingPage() {
     }
 
     if (needsMaterialQuestions && materialFromLab === 'Yes' && !selectedApplicableConsumables.length) return false
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && hasInvalidMaterialSpecs) return false
     if (needsMaterialQuestions && materialFromLab === 'Yes' && !materialConsumablesSummary.trim()) return false
+    if (needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected && !(Number(materialFilamentMeters) > 0)) return false
 
     if (workingIndependently === 'Yes' && !trainingCertificateNo.trim()) return false
 
@@ -1161,6 +1282,10 @@ export default function SlotBookingPage() {
     needsMaterialQuestions,
     materialFromLab,
     materialApproxQty,
+    materialItemSpecs,
+    materialFilamentMeters,
+    hasInvalidMaterialSpecs,
+    has3DPrinterSelected,
     selectedApplicableConsumables,
     materialConsumablesSummary,
     sheetResult,
@@ -1197,6 +1322,8 @@ export default function SlotBookingPage() {
     setTrainingCertificateNo('')
     setMaterialFromLab('No')
     setMaterialApproxQty('')
+    setMaterialItemSpecs({})
+    setMaterialFilamentMeters('')
   }
 
   function showSubmitPopup(targetEmail) {
@@ -1239,6 +1366,7 @@ export default function SlotBookingPage() {
       trainingCertificateNo: trainingCertificateNo.trim(),
       materialFromLab: needsMaterialQuestions ? materialFromLab : 'No',
       materialApproxQty: needsMaterialQuestions && materialFromLab === 'Yes' ? materialConsumablesSummary.trim() : '',
+      materialFilamentMeters: needsMaterialQuestions && materialFromLab === 'Yes' && has3DPrinterSelected ? String(materialFilamentMeters).trim() : '',
       materialRequirementSummary,
       createdAt: new Date().toISOString(),
     }
@@ -1248,7 +1376,7 @@ export default function SlotBookingPage() {
       ? (async () => {
         setSheetStatus('Checking & reserving…')
         try {
-          const resp = await callAppsScript({ commit: false, booking })
+          const resp = await callAppsScript({ commit: true, booking })
           setSheetResult(resp)
 
           if (!resp?.ok) {
@@ -1319,6 +1447,9 @@ export default function SlotBookingPage() {
         }
         if (GOOGLE_FORM_ENTRY.materialApproxQty) {
           params.set(`entry.${GOOGLE_FORM_ENTRY.materialApproxQty}`, booking.materialApproxQty)
+        }
+        if (GOOGLE_FORM_ENTRY.materialFilamentMeters) {
+          params.set(`entry.${GOOGLE_FORM_ENTRY.materialFilamentMeters}`, booking.materialFilamentMeters)
         }
 
         // Long-answer summary with quantities
@@ -1567,13 +1698,21 @@ export default function SlotBookingPage() {
                               const left = sheetResult?.inventoryLeft?.[it]
                               const total = INVENTORY_QTY[it]
                               const maxQty = Number.isFinite(left) ? left : Number.isFinite(total) ? total : undefined
+                              const metersValue = getMaterialSpecForItem(it, 'meters')
+                              const areaValue = getMaterialSpecForItem(it, 'area')
+                              const showArea = materialNeedsArea(it)
+                              const showMeters = materialNeedsMeters(it)
 
                               return (
                                 <div
                                   key={`material_${it}`}
                                   style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 110px',
+                                    gridTemplateColumns: showArea && showMeters
+                                      ? '1fr 92px 120px 120px'
+                                      : showArea || showMeters
+                                        ? '1fr 92px 120px'
+                                        : '1fr 92px',
                                     gap: '0.65rem',
                                     alignItems: 'center',
                                   }}
@@ -1590,9 +1729,44 @@ export default function SlotBookingPage() {
                                     placeholder="Qty"
                                     aria-label={`${it} quantity`}
                                   />
+                                  {showMeters ? (
+                                    <input
+                                      className="input"
+                                      type="number"
+                                      min={0.1}
+                                      step={0.1}
+                                      value={metersValue}
+                                      onChange={(e) => setMaterialSpecForItem(it, 'meters', e.target.value)}
+                                      placeholder="Meters"
+                                      aria-label={`${it} meters required`}
+                                    />
+                                  ) : null}
+                                  {showArea ? (
+                                    <input
+                                      className="input"
+                                      type="number"
+                                      min={0.1}
+                                      step={0.1}
+                                      value={areaValue}
+                                      onChange={(e) => setMaterialSpecForItem(it, 'area', e.target.value)}
+                                      placeholder="Area (sq.cm)"
+                                      aria-label={`${it} area required in square centimeters`}
+                                    />
+                                  ) : null}
                                 </div>
                               )
                             })}
+                            <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                              Fill meters only for filament materials. For acrylic/MDF/vinyl materials, fill area.
+                            </div>
+                            <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                              Synced total consumables quantity: {materialConsumablesTotalQty}
+                            </div>
+                            {has3DPrinterSelected ? (
+                              <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                                Total filament from selected spool materials: {materialFilamentMeters || '0'} m
+                              </div>
+                            ) : null}
                           </div>
                         ) : (
                           <div style={{ color: 'rgba(255, 120, 120, 0.85)', fontSize: '0.88rem' }}>
