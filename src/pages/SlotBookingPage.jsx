@@ -692,6 +692,9 @@ export default function SlotBookingPage() {
   const [sheetResult, setSheetResult] = useState(null)
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [lastAvailabilityKey, setLastAvailabilityKey] = useState('')
+  const [submitNotice, setSubmitNotice] = useState(null)
+  const [retryBookingPayload, setRetryBookingPayload] = useState(null)
+  const [retryingSubmit, setRetryingSubmit] = useState(false)
   const [nowTick, setNowTick] = useState(0)
   const submitBtnRef = useRef(null)
 
@@ -1328,12 +1331,53 @@ export default function SlotBookingPage() {
     setMaterialApproxQty('')
     setMaterialItemSpecs({})
     setMaterialFilamentMeters('')
+    setRetryBookingPayload(null)
   }
 
-  function showSubmitPopup(targetEmail) {
+  function showSubmitPopup(targetEmail, pdfUrl = '') {
     const mail = String(targetEmail || '').trim()
-    const line = mail ? `The request is mailed to ${mail}.` : 'The request is mailed to the entered email ID.'
-    window.alert(`Request submitted successfully.\n${line}`)
+    const line = mail ? `Request sent to ${mail}.` : 'Request sent to your entered email ID.'
+    setSubmitNotice({
+      type: 'success',
+      title: 'Request submitted successfully',
+      message: line,
+      pdfUrl: String(pdfUrl || '').trim(),
+    })
+  }
+
+  async function retryFailedSubmit() {
+    if (!appsScriptConfigured || !retryBookingPayload || retryingSubmit) return
+
+    setError('')
+    setSheetError('')
+    setSheetStatus('Retrying booking submission...')
+    setRetryingSubmit(true)
+
+    try {
+      const resp = await callAppsScript({ commit: true, booking: retryBookingPayload })
+      setSheetResult(resp)
+
+      if (!resp?.ok) {
+        setSheetStatus('')
+        setSheetError(String(resp?.error || 'Conflict detected. Please adjust your selection/time slot.'))
+        setError('Retry failed. Booking is still not saved.')
+        return
+      }
+
+      const pdfUrl = String(resp?.pdfEmail?.pdfFileUrl || '')
+      setSheetStatus('Stored in Bookings sheet.')
+      setSheetError('')
+      setRetryBookingPayload(null)
+      showSubmitPopup(retryBookingPayload.email, pdfUrl)
+      onClearSheet()
+    } catch (err) {
+      setSheetStatus('')
+      setSheetResult(null)
+      setSheetError(String(err?.message || err || 'Retry failed'))
+      setError('Retry failed. Please try again in a moment.')
+    } finally {
+      setRetryingSubmit(false)
+    }
   }
 
   function onSubmit(e) {
@@ -1341,6 +1385,7 @@ export default function SlotBookingPage() {
     setError('')
     setSheetError('')
     setSheetStatus('')
+    setSubmitNotice(null)
 
     if (!canSubmit) {
       setError('Please fill all required fields (and ensure From < To).')
@@ -1393,7 +1438,6 @@ export default function SlotBookingPage() {
           setSheetError('')
           return { ok: true, resp, appsScriptOk: true }
         } catch (err) {
-          // Don't block Google Form submission if Apps Script is down/misconfigured.
           setSheetStatus('')
           setSheetResult(null)
           setSheetError(String(err?.message || err || 'Failed to store/check booking'))
@@ -1403,18 +1447,20 @@ export default function SlotBookingPage() {
       : Promise.resolve({ ok: true, resp: null })
 
     commitPromise
-      .then(({ ok, appsScriptOk }) => {
+      .then(({ ok, appsScriptOk, resp }) => {
         if (!ok) return
 
         // Single-source write path: when Apps Script is configured, do NOT also
         // submit to Google Form, otherwise the same booking can be processed twice.
         if (appsScriptConfigured) {
           if (!appsScriptOk) {
-            setError('Apps Script save failed. Google Form fallback is disabled to prevent duplicate bookings.')
+            setRetryBookingPayload(booking)
+            setError('Apps Script save failed. Google Form fallback is disabled to prevent duplicate bookings. You can retry with the same payload.')
             submitBtnRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
             return
           }
-          showSubmitPopup(booking.email)
+          const pdfUrl = String((resp && resp.pdfEmail && resp.pdfEmail.pdfFileUrl) || '')
+          showSubmitPopup(booking.email, pdfUrl)
           onClearSheet()
           return
         }
@@ -1853,6 +1899,36 @@ export default function SlotBookingPage() {
                 </div>
               ) : null}
 
+              {submitNotice ? (
+                <div className="card" style={{ padding: '0.85rem 0.95rem', borderColor: 'rgba(120, 220, 170, 0.55)' }}>
+                  <div style={{ fontWeight: 800, marginBottom: '0.35rem' }}>{submitNotice.title}</div>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.84)', marginBottom: submitNotice.pdfUrl ? '0.65rem' : '0.45rem' }}>
+                    {submitNotice.message}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    {submitNotice.pdfUrl ? (
+                      <a
+                        className="btn"
+                        href={submitNotice.pdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        Download PDF
+                      </a>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setSubmitNotice(null)}
+                      style={{ opacity: 0.9 }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               {appsScriptConfigured ? (
                 sheetError || sheetStatus || sheetResult?.conflicts?.length ? (
                   <div className="card" style={{ padding: '0.75rem 0.9rem', borderColor: 'rgba(255, 255, 255, 0.16)' }}>
@@ -1929,6 +2005,20 @@ export default function SlotBookingPage() {
                   Submit Booking
                 </button>
               </div>
+
+              {appsScriptConfigured && retryBookingPayload ? (
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={retryFailedSubmit}
+                    disabled={retryingSubmit}
+                    style={{ opacity: retryingSubmit ? 0.65 : 1, flex: '1 1 auto' }}
+                  >
+                    {retryingSubmit ? 'Retrying...' : 'Retry Failed Submission'}
+                  </button>
+                </div>
+              ) : null}
 
               {appsScriptConfigured && !availabilityOk ? (
                 <div style={{ color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.92rem' }}>
