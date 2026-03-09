@@ -54,10 +54,10 @@ function AppShell() {
               <ul className="footerList">
                 <li>
                   Email:{' '}
-                  <a href="mailto:hello@tinkererslab.example">hello@tinkererslab.example</a>
+                  <a href="tinkererslabgeci@gecidukki.ac.in">tinkererslabgeci@gecidukki.ac.in</a>
                 </li>
                 <li>
-                  Phone: <a href="tel:+910000000000">+91 00000 00000</a>
+                  Phone: <a href="tel:+918078479399">+91 80784 79399</a>
                 </li>
               </ul>
             </div>
@@ -68,10 +68,10 @@ function AppShell() {
                 <li>
                   <a
                     className="footerIconLink"
-                    href="https://instagram.com/"
+                    href="https://www.instagram.com/tinkerers_lab_geci"
                     target="_blank"
                     rel="noreferrer"
-                    aria-label="Instagram: @tinkererslab"
+                    aria-label="Instagram: @tinkerers_lab_geci"
                   >
                     <FaInstagram className="footerBrandIcon" aria-hidden="true" focusable="false" />
                   </a>
@@ -90,10 +90,10 @@ function AppShell() {
                 <li>
                   <a
                     className="footerIconLink"
-                    href="https://wa.me/910000000000"
+                    href="https://whatsapp.com/channel/0029VbBw4kgIt5ruKlKFKb1b"
                     target="_blank"
                     rel="noreferrer"
-                    aria-label="WhatsApp: +91 00000 00000"
+                    aria-label="WhatsApp: +91 80784 79399"
                   >
                     <FaWhatsapp className="footerBrandIcon" aria-hidden="true" focusable="false" />
                   </a>
