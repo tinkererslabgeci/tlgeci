@@ -54,7 +54,7 @@ function AppShell() {
               <ul className="footerList">
                 <li>
                   Email:{' '}
-                  <a href="tinkererslabgeci@gecidukki.ac.in">tinkererslabgeci@gecidukki.ac.in</a>
+                  <a href="mailto:tinkererslabgeci@gecidukki.ac.in">tinkererslabgeci@gecidukki.ac.in</a>
                 </li>
                 <li>
                   Phone: <a href="tel:+918078479399">+91 80784 79399</a>
@@ -104,7 +104,9 @@ function AppShell() {
             <div className="footerCol">
               <h3 className="footerTitle">Location</h3>
               <ul className="footerList">
-                <li>Administrative Block, GEC Idukki, Painavu, Kerala, 685603</li>
+                <li>Tinkerers' Lab </li>
+                <li>Administrative Block, GEC Idukki, </li>
+                <li>Painavu, Kerala, 685603</li>
                 <li>
                   <a href="https://maps.app.goo.gl/EBjjch8Lqf53ipr66" target="_blank" rel="noreferrer">
                     Open in Google Maps
