@@ -106,7 +106,7 @@ function AppShell() {
               <ul className="footerList">
                 <li>Administrative Block, GEC Idukki, Painavu, Kerala, 685603</li>
                 <li>
-                  <a href="https://maps.google.com/" target="_blank" rel="noreferrer">
+                  <a href="https://maps.app.goo.gl/EBjjch8Lqf53ipr66" target="_blank" rel="noreferrer">
                     Open in Google Maps
                   </a>
                 </li>
