@@ -100,7 +100,7 @@ export const teams = [
     members: [
       { name: 'Alan Anto', role: 'Head', phone: '8129368816', instagram: 'https://www.instagram.com/alan0_0', linkedin: 'https://www.linkedin.com/in/alan-637155286', email: 'alananto132004@gmail.com', photo: '/execom/publicrelation_head.jpg' },
       { name: 'Sneha S Nair', role: 'Member', phone: '8921715842', instagram: 'https://www.instagram.com/fr.snehahh', linkedin: '', email: 'snehasnair047@gmail.com', photo: '/execom/publicrelation_member1.jpeg' },
-      { name: 'Aravind S Bhaskar', role: 'Member', phone: '95446862297', instagram: 'https://www.instagram.com/arvi.exe', linkedin: '', email: 'aravindsb456@gmail.com', photo: '/execom/publicrelation_member2.jpg' },
+      { name: 'Aravind S Bhaskar', role: 'Member', phone: '95446862297', instagram: 'https://www.instagram.com/arvi_.exe', linkedin: '', email: 'aravindsb456@gmail.com', photo: '/execom/publicrelation_member2.jpg' },
       { name: 'Nishba K', role: 'Member', phone: '8075553561', instagram: 'https://www.instagram.com/_nishba._', linkedin: 'https://www.linkedin.com/in/nishba-k-nishba-k-72302734b', email: 'nishba3561@gmail.com', photo: '/execom/publicrelation_member3.jpeg' },
       { name: 'Anjoom Dariya A S', role: 'Member', phone: '8590875966', instagram: 'https://www.instagram.com/anjoom_dariya_', linkedin: 'https://www.linkedin.com/in/anjoom-dariya-a-s-76541a373', email: 'anjoomdariya@gmail.com', photo: '/execom/publicrelation_member4.jpg' },
       { name: 'Shivani P V', role: 'Member', phone: '9446080409', instagram: 'https://www.instagram.com/_.ponnu_shiva._', linkedin: 'https://www.linkedin.com/in/shivani-p-v-ab2537329', email: 'ponnushiva7@gmail.com', photo: '/execom/publicrelation_member5.jpg' },
