@@ -98,20 +98,20 @@ export default function NavBar({ deferMs = 0 }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
           <div
             style={{
-              width: 44,
-              height: 44,
+                width: 62,
+                height: 62,
               borderRadius: 10,
-              background: '#f5f5f5',
+              background: 'transparent',
               display: 'grid',
               placeItems: 'center',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
+              border: '1px solid rgba(255, 255, 255, 0.90)',
               flexShrink: 0,
             }}
           >
             <img
-              src="/logo/tlgeci-logo.png"
+              src="/logo/tlgeci-logowhite.png"
               alt="TL GECI logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.14)' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.2)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}
             />
           </div>
 

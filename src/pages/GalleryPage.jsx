@@ -29,17 +29,17 @@ export default function GalleryPage() {
               width: 96,
               height: 96,
               borderRadius: 14,
-              background: '#f5f5f5',
+              background: 'transparent',
               display: 'grid',
               placeItems: 'center',
-              border: '1px solid rgba(255, 255, 255, 0.16)',
+              border: '1px solid rgba(255, 255, 255, 0.10)',
               flexShrink: 0,
             }}
           >
             <img
-              src="/logo/tlgeci-logo.png"
+              src="/logo/tlgeci-logopp.png"
               alt="TL GECI official logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))' }}
             />
           </div>
 
