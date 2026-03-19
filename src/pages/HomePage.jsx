@@ -1,14 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import lab1 from '../assets/gallery/lab-1.svg'
-import lab2 from '../assets/gallery/lab-2.svg'
-import lab3 from '../assets/gallery/lab-3.svg'
-import activityWorkshop from '../assets/activities/activity-workshop.svg'
-import activityBuild from '../assets/activities/activity-build.svg'
-import machineLaser from '../assets/equipment/machine-laser-cutter.svg'
-import machine3d from '../assets/equipment/machine-3d-printer.svg'
-import machineVinyl from '../assets/equipment/machine-vinyl-cutter.svg'
-import machinePower from '../assets/equipment/machine-power-tools.svg'
-import machineElectronics from '../assets/equipment/machine-electronics.svg'
 
 const TITLE = 'TINKERERS\' LAB'
 
@@ -22,27 +12,27 @@ const HAPPENINGS = [
   {
     title: 'Workshops',
     description: 'Short, hands-on sessions to learn tools (electronics, coding, CAD, prototyping).',
-    img: activityWorkshop,
+    img: '/activities/activity-workshop.svg',
     alt: 'Workshop activity',
   },
   {
     title: 'Project builds',
     description: 'Student-led projects where you build, test, and iterate with the community.',
-    img: activityBuild,
+    img: '/activities/activity-build.svg',
     alt: 'Students building projects',
   },
   {
     title: 'Open build hours',
     description: 'Drop in, pick a problem, and build with peer support in a student-managed space.',
-    img: machineElectronics,
+    img: '/equipment/machine-electronics.svg',
     alt: 'Electronics equipment and prototyping',
   },
 ]
 
 const SNAPSHOTS = [
-  { src: lab1, alt: 'Tinkerers Lab snapshot 1' },
-  { src: lab2, alt: 'Tinkerers Lab snapshot 2' },
-  { src: lab3, alt: 'Tinkerers Lab snapshot 3' },
+  { src: '/gallery/lab-1.svg', alt: 'Tinkerers Lab snapshot 1' },
+  { src: '/gallery/lab-2.svg', alt: 'Tinkerers Lab snapshot 2' },
+  { src: '/gallery/lab-3.svg', alt: 'Tinkerers Lab snapshot 3' },
 ]
 
 export default function HomePage() {
@@ -163,9 +153,9 @@ export default function HomePage() {
               <p style={{ color: 'rgba(255, 255, 255, 0.80)', marginTop: 0, lineHeight: 1.6 }}>
                 Tinkerers' Lab GECI is a student operating makerspace that helps you create,innovate,increment and refine,transforming ideas into reality through hands-on experimenting,team work and learning.
               </p>
-
-              {/* Space left here for more description of Tinkerers Lab */}
-              <div style={{ minHeight: '6rem' }}></div>
+              <p>need content !</p>
+             
+              <div style={{ minHeight: '2rem' }}></div>
 
               <div className="grid cols-2" style={{ marginTop: '1.1rem' }}>
                 <div className="card" style={{ padding: '1rem' }}>
@@ -184,7 +174,7 @@ export default function HomePage() {
                     Who it’s for
                   </h3>
                   <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.80)', lineHeight: 1.6 }}>
-                    Beginners to advanced—anyone curious. If you want to build something real, this is your place.
+                    Beginners to advanced,anyone curious. If you want to build something real, this is your place.
                   </p>
                 </div>
               </div>
@@ -231,7 +221,7 @@ export default function HomePage() {
               </h3>
 
               <div className="grid cols-3" style={{ marginTop: '0.75rem' }}>
-                {[{ src: machineLaser, label: 'Laser cutter' }, { src: machine3d, label: '3D printer' }, { src: machineVinyl, label: 'Vinyl cutter' }].map(
+                {[{ src: '/equipment/machine-laser-cutter.svg', label: 'Laser cutter' }, { src: '/equipment/machine-3d-printer.svg', label: '3D printer' }, { src: '/equipment/machine-vinyl-cutter.svg', label: 'Vinyl cutter' }].map(
                   (m, idx) => (
                     <div
                       key={m.label}
@@ -261,7 +251,7 @@ export default function HomePage() {
                 <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 0 }}>
                   <img
                     className="mediaImg"
-                    src={machinePower}
+                    src="/equipment/machine-power-tools.svg"
                     alt="Power tools"
                     loading="lazy"
                     style={{
@@ -278,7 +268,7 @@ export default function HomePage() {
                 <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 1 }}>
                   <img
                     className="mediaImg"
-                    src={machineElectronics}
+                    src="/equipment/machine-electronics.svg"
                     alt="Electronic equipments"
                     loading="lazy"
                     style={{
@@ -323,7 +313,6 @@ export default function HomePage() {
                 ))}
               </div>
               <p style={{ margin: '0.75rem 0 0', color: 'rgba(255, 255, 255, 0.70)', lineHeight: 1.6 }}>
-                Replace these with real photos anytime.
               </p>
             </section>
           </div>

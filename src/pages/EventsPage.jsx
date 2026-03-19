@@ -1,12 +1,6 @@
 import React from "react";
 
-import posterOrientation from "../assets/posters/events/poster-orientation.svg";
-import posterElectronics from "../assets/posters/events/poster-electronics.svg";
-import posterBuildDay from "../assets/posters/events/poster-buildday.svg";
-import posterLabSetup from "../assets/posters/events/poster-lab-setup.svg";
-import posterExecomTraining from "../assets/posters/execom/poster-execom-training.svg";
-import poster3DPrinting from "../assets/posters/events/poster-3d-printing.svg";
-import posterEsp32Bootcamp from "../assets/posters/events/poster-esp32-bootcamp.svg";
+
 
 const upcomingEvents = [
   {
@@ -17,7 +11,7 @@ const upcomingEvents = [
     description:
       "A quick walkthrough of the lab, tools, safety rules, and how to start your first build.",
     registrationUrl: "https://forms.gle/your-form-link",
-    posterSrc: posterOrientation,
+    posterSrc: "/posters/events/poster-orientation.svg",
     posterAlt: "Orientation event poster",
   },
   {
@@ -28,7 +22,7 @@ const upcomingEvents = [
     description:
       "Official inauguration of the Tinkerers Lab — join us for the opening and a quick showcase of tools and ongoing projects.",
     registrationUrl: "https://forms.gle/your-form-link",
-    posterSrc: posterOrientation,
+    posterSrc: "/posters/events/poster-orientation.svg",
     posterAlt: "Lab inauguration poster",
   },
   {
@@ -39,7 +33,7 @@ const upcomingEvents = [
     description:
       "Hands-on session covering components, breadboarding, and simple circuits.",
     registrationUrl: "https://forms.gle/your-form-link",
-    posterSrc: posterElectronics,
+    posterSrc: "/posters/events/poster-electronics.svg",
     posterAlt: "Electronics workshop poster",
   },
   {
@@ -50,7 +44,7 @@ const upcomingEvents = [
     description:
       "Bring your idea and build with the community. Mentors will be around to help.",
     registrationUrl: "https://forms.gle/your-form-link",
-    posterSrc: posterBuildDay,
+    posterSrc: "/posters/events/poster-buildday.svg",
     posterAlt: "Project build day poster",
   },
   {
@@ -61,7 +55,7 @@ const upcomingEvents = [
     description:
       "2-day beginner bootcamp: setup, basics of ESP32, sensors, and a small Wi‑Fi project.",
     registrationUrl: "https://forms.gle/your-form-link",
-    posterSrc: posterEsp32Bootcamp,
+    posterSrc: "/posters/events/poster-esp32-bootcamp.svg",
     posterAlt: "ESP32 bootcamp poster",
   },
 ];
@@ -74,7 +68,7 @@ const pastEvents = [
     venue: "Tinkerers Lab, GECI",
     description:
       "Initial lab setup, installing tools, organizing equipment, and preparing the space.",
-    posterSrc: posterLabSetup,
+    posterSrc: "/posters/events/poster-lab-setup.svg",
     posterAlt: "Lab setup and installing poster",
   },
   {
@@ -84,7 +78,7 @@ const pastEvents = [
     venue: "Tinkerers Lab, GECI",
     description:
       "Execom onboarding: roles, workflow, event planning, and communication basics.",
-    posterSrc: posterExecomTraining,
+    posterSrc: "/posters/execom/poster-execom-training.svg",
     posterAlt: "Execom training poster",
   },
   {
@@ -94,7 +88,7 @@ const pastEvents = [
     venue: "Tinkerers Lab, GECI",
     description:
       "Intro to 3D printing: slicing basics, printer setup, and a quick print demo.",
-    posterSrc: poster3DPrinting,
+    posterSrc: "/posters/events/poster-3d-printing.svg",
     posterAlt: "3D printing workshop poster",
   },
 ];

@@ -95,9 +95,30 @@ export default function NavBar({ deferMs = 0 }) {
       }}
     >
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.9rem 0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <span style={{ fontWeight: 700 }}>Tinkerers Lab</span>
-          <span style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.92rem' }}>GECI</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              background: '#f5f5f5',
+              display: 'grid',
+              placeItems: 'center',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src="/logo/tlgeci-logo.png"
+              alt="TL GECI logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.14)' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <span style={{ fontWeight: 700 }}>Tinkerers Lab</span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.92rem' }}>GECI</span>
+          </div>
         </div>
 
         <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-end' }}>

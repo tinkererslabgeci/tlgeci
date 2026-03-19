@@ -1,11 +1,7 @@
-import lab1 from '../assets/gallery/lab-1.svg'
-import lab2 from '../assets/gallery/lab-2.svg'
-import lab3 from '../assets/gallery/lab-3.svg'
-
 const galleryItems = Array.from({ length: 9 }).map((_, i) => ({
   id: i + 1,
   title: `Project / Moment ${i + 1}`,
-  img: [lab1, lab2, lab3][i % 3],
+  img: ['/gallery/lab-1.svg', '/gallery/lab-2.svg', '/gallery/lab-3.svg'][i % 3],
 }))
 
 export default function GalleryPage() {
@@ -17,6 +13,44 @@ export default function GalleryPage() {
       </header>
 
       <section className="card" style={{ padding: '1.4rem' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            background: 'rgba(255, 255, 255, 0.03)',
+          }}
+        >
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 14,
+              background: '#f5f5f5',
+              display: 'grid',
+              placeItems: 'center',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src="/logo/tlgeci-logo.png"
+              alt="TL GECI official logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)' }}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 700 }}>Official Logo</div>
+            <div style={{ marginTop: '0.3rem', color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.94rem' }}>
+              This is the official TL GECI identity mark.
+            </div>
+          </div>
+        </div>
+
         <div className="grid cols-3">
           {galleryItems.map((item, idx) => (
             <div
