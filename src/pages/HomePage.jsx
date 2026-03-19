@@ -11,13 +11,13 @@ const QUOTES = [
 const HAPPENINGS = [
   {
     title: 'Workshops',
-    description: 'Short, hands-on sessions to learn tools (electronics, coding, CAD, prototyping).',
+    description: 'Workshops at the Tinkerers’ Lab are designed to give students practical exposure to electronics and innovation. Through guided sessions, participants learn to work with tools, components, and systems while developing problem-solving skills and creative thinking..',
     img: '/activities/activity-workshop.svg',
     alt: 'Workshop activity',
   },
   {
     title: 'Project builds',
-    description: 'Student-led projects where you build, test, and iterate with the community.',
+    description: 'Student-led projects where ideas are designed, built, tested, and refined through collaboration, encouraging innovation and problem-solving.',
     img: '/activities/activity-build.svg',
     alt: 'Students building projects',
   },
