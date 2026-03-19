@@ -5,9 +5,9 @@ const linkStyle = ({ isActive }) => ({
   textDecoration: 'none',
   padding: '0.5rem 0.75rem',
   borderRadius: 12,
-  border: '1px solid rgba(255, 255, 255, 0.14)',
-  background: isActive ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.06)',
-  color: 'rgba(255, 255, 255, 0.92)',
+  border: '1px solid var(--border)',
+  background: isActive ? 'var(--panel-strong)' : 'var(--panel)',
+  color: 'var(--text)',
 })
 
 export default function NavBar({ deferMs = 0 }) {
@@ -86,8 +86,8 @@ export default function NavBar({ deferMs = 0 }) {
         top: 0,
         zIndex: 10,
         backdropFilter: 'blur(10px)',
-        background: 'rgba(11, 18, 32, 0.70)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+        background: 'var(--header-bg)',
+        borderBottom: '1px solid var(--border)',
         opacity: headerOpacity,
         transform: headerTransform,
         transition: 'opacity 280ms ease-out, transform 280ms ease-out',
@@ -104,7 +104,7 @@ export default function NavBar({ deferMs = 0 }) {
               background: 'transparent',
               display: 'grid',
               placeItems: 'center',
-              border: '1px solid rgba(255, 255, 255, 0.90)',
+              border: '1px solid var(--border-strong)',
               flexShrink: 0,
             }}
           >
@@ -116,32 +116,34 @@ export default function NavBar({ deferMs = 0 }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-            <span style={{ fontWeight: 700 }}>Tinkerers Lab</span>
-            <span style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.92rem' }}>GECI</span>
+            <span style={{ fontWeight: 700 }}>Tinkerers' Lab</span>
+            <span style={{ color: 'var(--muted)', fontSize: '0.92rem' }}>GECI</span>
           </div>
         </div>
 
-        <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-end' }}>
-          <NavLink to="/" style={linkStyle} end>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <NavLink to="/" style={linkStyle} end>
             Home
-          </NavLink>
+            </NavLink>
 
-          <NavLink to="/events" style={linkStyle}>
+            <NavLink to="/events" style={linkStyle}>
             Events
-          </NavLink>
+            </NavLink>
 
-          <NavLink to="/team" style={linkStyle}>
+            <NavLink to="/team" style={linkStyle}>
             Team
-          </NavLink>
+            </NavLink>
 
-          <NavLink to="/gallery" style={linkStyle}>
+            <NavLink to="/gallery" style={linkStyle}>
             Gallery
-          </NavLink>
+            </NavLink>
 
-          <NavLink to="/booking" style={linkStyle}>
+            <NavLink to="/booking" style={linkStyle}>
             Slot Booking
-          </NavLink>
-        </nav>
+            </NavLink>
+          </nav>
+        </div>
       </div>
     </header>
   )

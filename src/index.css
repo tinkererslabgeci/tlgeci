@@ -196,10 +196,15 @@
   color-scheme: dark;
   --bg: #0d0f14;
   --panel: rgba(255, 255, 255, 0.04);
+  --panel-strong: rgba(255, 255, 255, 0.12);
   --text: rgba(255, 255, 255, 0.90);
   --muted: rgba(255, 255, 255, 0.62);
   --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.82);
+  --header-bg: rgba(11, 18, 32, 0.70);
   --link: rgba(200, 220, 255, 0.95);
+  --field-bg: rgba(0, 0, 0, 0.18);
+  --cursor-color: rgba(255, 255, 255, 0.85);
   --font-body: 'Open Sans', 'Lato', 'Optima TL', 'Adobe Caslon Pro TL', system-ui, -apple-system, Segoe UI, Roboto,
     Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
   --font-display: 'Opus TL', 'Space Grotesk', var(--font-body);
@@ -220,6 +225,7 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 h1,
@@ -248,7 +254,7 @@ h3 {
   width: 44px;
   height: 44px;
   transform: translate3d(50vw, 50vh, 0);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--cursor-color);
   filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.35));
 }
 
@@ -284,7 +290,7 @@ a {
 .pageSubtitle {
   margin: 0.6rem auto 0;
   max-width: 65ch;
-  color: rgba(255, 255, 255, 0.80);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -322,7 +328,7 @@ a {
 
 .btn {
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--panel);
   color: var(--text);
   border-radius: 12px;
   padding: 0.7rem 0.95rem;
@@ -330,13 +336,13 @@ a {
 }
 
 .btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--panel-strong);
 }
 
 .input {
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--field-bg);
   color: var(--text);
   border-radius: 12px;
   padding: 0.75rem 0.9rem;

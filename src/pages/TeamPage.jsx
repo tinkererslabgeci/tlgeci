@@ -91,9 +91,9 @@ const teams = [
     title: 'Outreach Team',
     members: [
       { name: 'Adithyan P L.', role: 'Head', phone: '7510522251', instagram: '', linkedin: '', email: 'adhizdc@gmail.com', photo: '/execom/outreach_head.jpg' },
-      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'amarnadh4you@gmail.com', photo: '/execom/outreach_member1.jpg' },
-      { name: 'Athul Krishnan T.', role: 'Member', phone: '8848765532', instagram: '', linkedin: '', email: 'athulkrishnant22@gmail.com', photo: '/execom/outreach_member2.jpg' },
-      { name: 'Archana Gopi', role: 'Member', phone: '9188221897', instagram: '', linkedin: '', email: 'archanagopiv@gmail.com', photo: '/execom/outreach_member3.jpg' },
+      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'vinayaksabu8@gmail.com', photo: '/execom/outreach_member1.jpg' },
+      { name: 'Athul Krishnan T.', role: 'Member', phone: '8848765532', instagram: '', linkedin: '', email: 'athulkrishnant22@gmail.com', photo: '/execom/outreach_member2.jpeg' },
+      { name: 'Archana Gopi', role: 'Member', phone: '9188221897', instagram: '', linkedin: '', email: 'archanagopiv@gmail.com', photo: '/execom/outreach_member3.jpeg' },
     ],
   },
   {
@@ -101,9 +101,9 @@ const teams = [
     title: 'Public Relations Team',
     members: [
       { name: 'Alan Anto', role: 'Head', phone: '8129368816', instagram: '', linkedin: '', email: 'alananto132004@gmail.com', photo: '/execom/publicrelation_head.jpg' },
-      { name: 'Sneha S Nair', role: 'Member', phone: '8921715842', instagram: '', linkedin: '', email: 'snehasnair047@gmail.com', photo: '/execom/publicrelation_member1.jpg' },
+      { name: 'Sneha S Nair', role: 'Member', phone: '8921715842', instagram: '', linkedin: '', email: 'snehasnair047@gmail.com', photo: '/execom/publicrelation_member1.jpeg' },
       { name: 'Aravind S Bhaskar', role: 'Member', phone: '95446862297', instagram: '', linkedin: '', email: 'aravindsb456@gmail.com', photo: '/execom/publicrelation_member2.jpg' },
-      { name: 'Nishba K', role: 'Member', phone: '8075553561', instagram: '', linkedin: '', email: 'nishba3561@gmail.com', photo: '/execom/publicrelation_member3.jpg' },
+      { name: 'Nishba K', role: 'Member', phone: '8075553561', instagram: '', linkedin: '', email: 'nishba3561@gmail.com', photo: '/execom/publicrelation_member3.jpeg' },
       { name: 'Anjoom Dariya A S', role: 'Member', phone: '8590875966', instagram: '', linkedin: '', email: 'anjoomdariya@gmail.com', photo: '/execom/publicrelation_member4.jpg' },
       { name: 'Shivani P V', role: 'Member', phone: '9446080409', instagram: 'https://www.instagram.com/_.ponnu_shiva._', linkedin: 'https://www.linkedin.com/in/shivani-p-v-ab2537329', email: 'ponnushiva7@gmail.com', photo: '/execom/publicrelation_member5.jpg' },
     ],
@@ -141,9 +141,9 @@ function ContactIcon({ type, value, icon, label }) {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '1px solid rgba(255, 255, 255, 0.10)',
-          background: 'rgba(255, 255, 255, 0.03)',
-          color: 'rgba(255, 255, 255, 0.40)',
+          border: '1px solid var(--border)',
+          background: 'var(--panel)',
+          color: 'var(--muted)',
           cursor: 'not-allowed',
         }}
       >
@@ -166,9 +166,9 @@ function ContactIcon({ type, value, icon, label }) {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid rgba(255, 255, 255, 0.16)',
-        background: 'rgba(255, 255, 255, 0.06)',
-        color: 'rgba(255, 255, 255, 0.92)',
+        border: '1px solid var(--border)',
+        background: 'var(--panel)',
+        color: 'var(--text)',
         textDecoration: 'none',
       }}
     >
@@ -189,9 +189,9 @@ function MemberCard({ member, index = 0 }) {
         />
       </div>
       <div style={{ marginTop: '0.75rem', fontWeight: 700 }}>{member.name}</div>
-      <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.72)' }}>{member.role}</div>
+      <div style={{ marginTop: '0.2rem', color: 'var(--muted)' }}>{member.role}</div>
       {member.department ? (
-        <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.9rem' }}>{member.department}</div>
+        <div style={{ marginTop: '0.2rem', color: 'var(--muted)', fontSize: '0.9rem' }}>{member.department}</div>
       ) : null}
       <div style={{ marginTop: '0.7rem', display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <ContactIcon type="whatsapp" value={member.phone} icon={<FaWhatsapp />} label={`WhatsApp ${member.name}`} />

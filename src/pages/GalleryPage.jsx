@@ -37,7 +37,7 @@ export default function GalleryPage() {
             }}
           >
             <img
-              src="/logo/tlgeci-logopp.png"
+              src="/logo/tlgeci-logowhite.png"
               alt="TL GECI official logo"
               style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))' }}
             />
