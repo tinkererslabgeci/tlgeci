@@ -29,7 +29,7 @@ export const leadership = [
     instagram: '',
     linkedin: '',
     email: 'pratheesh7@gmail.com',
-    photo: '/execom/lab_champion.jpg',
+    photo: '/execom/lab_champion.jpeg',
   },
   {
     name: 'Pranay K Pradeep',
