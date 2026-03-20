@@ -23,7 +23,7 @@ const HAPPENINGS = [
   },
   {
     title: 'Open build hours',
-    description: 'Drop in, pick a problem, and build with peer support in a student-managed space.',
+    description: 'Drop in, pick a problem, and build with peer support in a student-managed space.Flexible lab hours to explore ideas, work on personal or group projects, and build solutions with peer support in a student-driven environment.',
     img: '/equipment/machine-electronics.svg',
     alt: 'Electronics equipment and prototyping',
   },
@@ -181,7 +181,7 @@ export default function HomePage() {
             </section>
 
             <section className="card toneB" style={{ padding: '1.4rem' }}>
-              <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+              <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.8 rem' }}>
                 What’s happening in TL GECI
               </h3>
               <div className="grid cols-3" style={{ marginTop: '0.75rem' }}>
@@ -206,7 +206,7 @@ export default function HomePage() {
                     />
                     <div style={{ padding: '0.9rem' }}>
                       <div style={{ fontWeight: 750 }}>{h.title}</div>
-                      <p style={{ margin: '0.35rem 0 0', color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.6 }}>
+                      <p style={{ margin: '0.45rem 0 0', color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.8 }}>
                         {h.description}
                       </p>
                     </div>

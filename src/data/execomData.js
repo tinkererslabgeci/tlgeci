@@ -59,7 +59,7 @@ export const teams = [
     title: 'Event Management Team',
     members: [
       { name: 'Ihsaan Mohammed K S', role: 'Head', phone: '9744907092', instagram: 'https://www.instagram.com/ks_mohammed_ihsaan', linkedin: 'https://www.linkedin.com/in/ihsaanmoh', email: 'ihsaanmoh8@gmail.com', photo: '/execom/event_head.jpeg' },
-      { name: 'Anand P Vinod', role: 'Member', phone: '9747218422', instagram: 'https://www.instagram.com/aanandhhh_', linkedin: '', email: 'anandpvinod887@gmail.com', photo: '/execom/event_member1.jpg' },
+      { name: 'Anand P Vinod', role: 'Member', phone: '9747218422', instagram: 'https://www.instagram.com/aanandhhh___', linkedin: '', email: 'anandpvinod887@gmail.com', photo: '/execom/event_member1.jpg' },
       { name: 'Feba Biju', role: 'Member', phone: '8839391903', instagram: 'https://www.instagram.com/freebirds_8/', linkedin: 'https://www.linkedin.com/in/feba-biju-014658361', email: 'bijupanikkadu@gmail.com', photo: '/execom/event_member2.webp' },
       { name: 'Jestin Joseph', role: 'Member', phone: '7558896441', instagram: 'https://www.instagram.com/_jx_ti_', linkedin: 'https://www.linkedin.com/in/jestin-joseph-1265393b5', email: 'jestinjoseph5088@gmail.com', photo: '/execom/event_member3.jpg' },
     ],
@@ -89,8 +89,8 @@ export const teams = [
     title: 'Outreach Team',
     members: [
       { name: 'Adithyan P L.', role: 'Head', phone: '7510522251', instagram: 'https://www.instagram.com/_.adhi_i_', linkedin: 'https://www.linkedin.com/in/adhithyan-pl-997308314', email: 'adhizdc@gmail.com', photo: '/execom/outreach_head.jpg' },
-      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'vinayaksabu8@gmail.com', photo: '/execom/outreach_member1.jpg' },
-      { name: 'Athul Krishnan T.', role: 'Member', phone: '8848765532', instagram: 'https://www.instagram.com/athul_riz', linkedin: 'https://www.linkedin.com/in/athul-krishna-t-3357782b9', email: 'athulkrishnant22@gmail.com', photo: '/execom/outreach_member2.jpeg' },
+      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'vinayaksabu8@gmail.com', photo: '/execom/outreach_member1.jpeg' },
+      { name: 'Athul Krishnan T.', role: 'Member', phone: '8848765532', instagram: 'https://www.instagram.com/athul_riz', linkedin: 'https://www.linkedin.com/in/athul-krishnan-t-3357782b9/', email: 'athulkrishnant22@gmail.com', photo: '/execom/outreach_member2.jpeg' },
       { name: 'Archana Gopi', role: 'Member', phone: '9188221897', instagram: '', linkedin: '', email: 'archanagopiv@gmail.com', photo: '/execom/outreach_member3.jpeg' },
     ],
   },
