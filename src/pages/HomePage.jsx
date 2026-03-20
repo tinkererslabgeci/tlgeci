@@ -153,7 +153,9 @@ export default function HomePage() {
               <p style={{ color: 'rgba(255, 255, 255, 0.80)', marginTop: 0, lineHeight: 1.6 }}>
                 Tinkerers' Lab GECI is a student operating makerspace that helps you create,innovate,increment and refine,transforming ideas into reality through hands-on experimenting,team work and learning.
               </p>
-              <p>need content !</p>
+              <p>The lab provides an open environment where students from all disciplines come together to explore technology, experiment with concepts, and push the boundaries of what’s possible. Whether you’re a beginner taking your first step into electronics or an experienced builder working on advanced prototypes, the lab supports your journey.
+              With access to tools, mentorship, and a collaborative community, we encourage a culture of learning by doing—where failure is part of the process and innovation is the goal.</p>
+              <p>Equipped with 3D printers, laser cutters, vinyl cutters, and a wide range of electronic tools, our lab empowers you to design, prototype, and build with precision. </p>
              
               <div style={{ minHeight: '2rem' }}></div>
 
