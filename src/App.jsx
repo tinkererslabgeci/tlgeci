@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import emailjs from '@emailjs/browser'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { FaInstagram, FaLinkedinIn, FaWhatsapp } from 'react-icons/fa'
 import CursorPlane from './components/CursorPlane.jsx'
@@ -7,6 +9,11 @@ import EventsPage from './pages/EventsPage.jsx'
 import TeamPage from './pages/TeamPage.jsx'
 import GalleryPage from './pages/GalleryPage.jsx'
 import SlotBookingPage from './pages/SlotBookingPage.jsx'
+
+const COUNTRY_CODES = ['+91', '+1', '+44', '+61', '+65', '+971']
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 export default function App() {
   return (
@@ -19,6 +26,84 @@ export default function App() {
 function AppShell() {
   const location = useLocation()
   const isHome = location.pathname === '/'
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    countryCode: '+91',
+    phone: '',
+    email: '',
+    subject: '',
+    message: '',
+  })
+  const [isSendingContact, setIsSendingContact] = useState(false)
+  const [contactStatus, setContactStatus] = useState({ type: '', text: '' })
+
+  const updateContactField = (field) => (event) => {
+    setContactForm((prev) => ({ ...prev, [field]: event.target.value }))
+  }
+
+  const onContactSubmit = async (event) => {
+    event.preventDefault()
+    const name = contactForm.name.trim()
+    const countryCode = contactForm.countryCode.trim()
+    const phone = contactForm.phone.trim()
+    const email = contactForm.email.trim()
+    const subject = contactForm.subject.trim()
+    const message = contactForm.message.trim()
+
+    if (!name || !phone || !email || !subject || !message) {
+      return
+    }
+
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+      setContactStatus({
+        type: 'error',
+        text: 'Contact form is not configured. Add EmailJS keys in environment variables.',
+      })
+      return
+    }
+
+    setIsSendingContact(true)
+    setContactStatus({ type: '', text: '' })
+
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name: name,
+          from_email: email,
+          reply_to: email,
+          phone_number: `${countryCode} ${phone}`,
+          message,
+          subject: `${subject} - ${name}`,
+          reply_hint: 'Please reply to this mail to contact the sender directly.',
+        },
+        {
+          publicKey: EMAILJS_PUBLIC_KEY,
+        }
+      )
+
+      setContactStatus({
+        type: 'success',
+        text: 'Message sent successfully. We will get back to you soon.',
+      })
+      setContactForm({
+        name: '',
+        countryCode: '+91',
+        phone: '',
+        email: '',
+        subject: '',
+        message: '',
+      })
+    } catch {
+      setContactStatus({
+        type: 'error',
+        text: 'Unable to send message right now. Please try again in a moment.',
+      })
+    } finally {
+      setIsSendingContact(false)
+    }
+  }
 
   return (
     <>
@@ -60,6 +145,82 @@ function AppShell() {
                   Phone: <a href="tel:+918078479399">+91 80784 79399</a>
                 </li>
               </ul>
+
+              <form className="footerContactForm" onSubmit={onContactSubmit}>
+                <label htmlFor="footer-contact-question" className="footerContactLabel">Contact Us</label>
+                <input
+                  id="footer-contact-name"
+                  className="footerContactInput"
+                  type="text"
+                  placeholder="Your name"
+                  value={contactForm.name}
+                  onChange={updateContactField('name')}
+                  required
+                />
+
+                <div className="footerContactPhoneRow">
+                  <select
+                    id="footer-contact-country-code"
+                    className="footerContactInput footerContactCountryCode"
+                    value={contactForm.countryCode}
+                    onChange={updateContactField('countryCode')}
+                    aria-label="Country code"
+                  >
+                    {COUNTRY_CODES.map((code) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
+                  </select>
+
+                  <input
+                    id="footer-contact-phone"
+                    className="footerContactInput"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="Phone number"
+                    value={contactForm.phone}
+                    onChange={updateContactField('phone')}
+                    required
+                  />
+                </div>
+
+                <input
+                  id="footer-contact-email"
+                  className="footerContactInput"
+                  type="email"
+                  placeholder="Email address"
+                  value={contactForm.email}
+                  onChange={updateContactField('email')}
+                  required
+                />
+
+                <input
+                  id="footer-contact-subject"
+                  className="footerContactInput"
+                  type="text"
+                  placeholder="Subject"
+                  value={contactForm.subject}
+                  onChange={updateContactField('subject')}
+                  required
+                />
+
+                <textarea
+                  id="footer-contact-question"
+                  className="footerContactInput"
+                  rows={4}
+                  placeholder="Type your message..."
+                  value={contactForm.message}
+                  onChange={updateContactField('message')}
+                  required
+                />
+                <button type="submit" className="btn footerContactBtn" disabled={isSendingContact}>
+                  {isSendingContact ? 'Sending...' : 'Send Mail'}
+                </button>
+                {contactStatus.text && (
+                  <p className={`footerContactStatus ${contactStatus.type === 'success' ? 'isSuccess' : 'isError'}`}>
+                    {contactStatus.text}
+                  </p>
+                )}
+              </form>
             </div>
 
             <div className="footerCol">

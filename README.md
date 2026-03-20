@@ -173,3 +173,33 @@ npm run build
 npm run preview
 ```
 
+## Contact Form (EmailJS)
+The footer Contact Us form now sends email using EmailJS.
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Copy environment template and fill values:
+```bash
+copy .env.example .env
+```
+
+3. Add these values in `.env`:
+- VITE_EMAILJS_SERVICE_ID
+- VITE_EMAILJS_TEMPLATE_ID
+- VITE_EMAILJS_PUBLIC_KEY
+
+4. In your EmailJS template, include variables used by the app:
+- from_name
+- from_email
+- reply_to
+- phone_number
+- message
+- subject
+- reply_hint
+
+5. Suggested template line:
+- "Reply to this mail to contact the sender directly."
+
