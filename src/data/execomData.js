@@ -60,7 +60,7 @@ export const teams = [
     members: [
       { name: 'Ihsaan Mohammed K S', role: 'Head', phone: '9744907092', instagram: 'https://www.instagram.com/ks_mohammed_ihsaan', linkedin: 'https://www.linkedin.com/in/ihsaanmoh', email: 'ihsaanmoh8@gmail.com', photo: '/execom/event_head.jpeg' },
       { name: 'Anand P Vinod', role: 'Member', phone: '9747218422', instagram: 'https://www.instagram.com/aanandhhh___', linkedin: '', email: 'anandpvinod887@gmail.com', photo: '/execom/event_member1.jpg' },
-      { name: 'Feba Biju', role: 'Member', phone: '8839391903', instagram: 'https://www.instagram.com/freebirds_8/', linkedin: 'https://www.linkedin.com/in/feba-biju-014658361', email: 'bijupanikkadu@gmail.com', photo: '/execom/event_member2.webp' },
+      { name: 'Feba Biju', role: 'Member', phone: '8839391903', instagram: 'https://www.instagram.com/freebirds_8/', linkedin: 'https://www.linkedin.com/in/feba-biju-014658361', email: 'bijupanikkadu@gmail.com', photo: '/execom/event_member2.jpeg' },
       { name: 'Jestin Joseph', role: 'Member', phone: '7558896441', instagram: 'https://www.instagram.com/_jx_ti_', linkedin: 'https://www.linkedin.com/in/jestin-joseph-1265393b5', email: 'jestinjoseph5088@gmail.com', photo: '/execom/event_member3.jpg' },
     ],
   },
