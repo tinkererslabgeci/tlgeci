@@ -43,7 +43,7 @@ export const allEvents = [
     fullDescription:
       '"Play is not a break from learning. It is endless, delightful, deep, engaging, practical learning." — Vince Gowmon\n\nTinkerers\' Lab GECI in collaboration with Maker Bhavan Foundation presents ElectrArduino Workshop — A rare hands-on electronic workshop with Electrono training kits from the creator of the Bliksem Electrono training kits and proprietor of Bliksem Tech® (Singapore) — Mr V. S. Narasimhan (MSc Physics, Electronics) (Philips, Micronas GmbH, Genesis Microchip Inc.)\n\nWe organize this in association with the formal inauguration of Tinkerers\' Lab GECI, the first of its kind in any engineering college in Kerala.\n\nThis is exclusive to first years.\n🔴 Limited Seats\n\n📅Date: 24 March 2026\n⌛Time: 9:30 AM – 4:30 PM\n📍Venue: Tinkerers\' Lab (Second Floor, Admin Block), GECI\n\nThe session will be conducted separately in the forenoon and afternoon.\n want to know more ? \n \n Want to know more ? \n Pranay: +91 8078479399\n Hathim : +91 8921594639',
     registrationUrl: 'https://forms.gle/JtuwCCTaiZCKWvx89',
-    posterSrc: '/posters/events/ElectrArduinO.jpeg',
+    posterSrc: '/posters/events/ElectrArduino.jpeg',
     posterAlt: 'ElectrArduino Workshop',
     slug: 'electrarduino-workshop',
   },

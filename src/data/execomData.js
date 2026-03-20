@@ -78,7 +78,7 @@ export const teams = [
     key: 'project-handling',
     title: 'Project Handling Team',
     members: [
-      { name: 'Hathim Ali K H', role: 'Head', phone: '8921594639', instagram: 'https://www.instagram.com/alihathimm', linkedin: 'https://www.linkedin.com/in/hathim-ali-k-h-a283ab384', email: 'h.ali@tuta.io', photo: '/execom/project_head.jpg' },
+      { name: 'Hathim Ali K H', role: 'Head', phone: '8921594639', instagram: 'https://www.instagram.com/alihathimm', linkedin: 'https://www.linkedin.com/in/hathim-ali-k-h-a283ab384', email: 'h.ali@tuta.io', photo: '/execom/project_head.jpeg' },
       { name: 'Adithyan V S', role: 'Member', phone: '7356591930', instagram: 'https://www.instagram.com/steamcake_107', linkedin: 'https://in.linkedin.com/in/adithyan-v-s-741345293', email: 'adithyanvs107@gmail.com', photo: '/execom/project_member1.jpg' },
       { name: 'Lakshmi B', role: 'Member', phone: '9446845106', instagram: '', linkedin: '', email: 'blakshmi5106@gmail.com', photo: '/execom/project_member2.jpg' },
       { name: 'Harekrishna K G', role: 'Member', phone: '7902599369', instagram: 'https://www.instagram.com/kg_harekrishna_', linkedin: 'https://www.linkedin.com/in/harekrishna-k-g-9a5103342', email: 'hkkg0987@gmail.com', photo: '/execom/project_member3.jpg' },
@@ -89,7 +89,7 @@ export const teams = [
     title: 'Outreach Team',
     members: [
       { name: 'Adithyan P L.', role: 'Head', phone: '7510522251', instagram: 'https://www.instagram.com/_.adhi_i_', linkedin: 'https://www.linkedin.com/in/adhithyan-pl-997308314', email: 'adhizdc@gmail.com', photo: '/execom/outreach_head.jpg' },
-      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'vinayaksabu8@gmail.com', photo: '/execom/outreach_member1.jpg' },
+      { name: 'Vinayak Sabu', role: 'Member', phone: '7012877989', instagram: '', linkedin: '', email: 'vinayaksabu8@gmail.com', photo: '/execom/outreach_member1.jpeg' },
       { name: 'Athul Krishnan T.', role: 'Member', phone: '8848765532', instagram: 'https://www.instagram.com/athul_riz', linkedin: 'https://www.linkedin.com/in/athul-krishnan-t-3357782b9', email: 'athulkrishnant22@gmail.com', photo: '/execom/outreach_member2.jpeg' },
       { name: 'Archana Gopi', role: 'Member', phone: '9188221897', instagram: '', linkedin: '', email: 'archanagopiv@gmail.com', photo: '/execom/outreach_member3.jpeg' },
     ],
