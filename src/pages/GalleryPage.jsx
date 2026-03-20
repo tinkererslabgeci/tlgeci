@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { galleryItems } from '../data/galleryData'
 
+const collageFrames = [
+  { ratio: '4 / 3', tilt: '-1.2deg', lift: '-4px' },
+  { ratio: '3 / 4', tilt: '1deg', lift: '8px' },
+  { ratio: '1 / 1', tilt: '-0.8deg', lift: '2px' },
+  { ratio: '16 / 10', tilt: '1.3deg', lift: '-6px' },
+  { ratio: '5 / 4', tilt: '-1deg', lift: '7px' },
+  { ratio: '4 / 5', tilt: '0.9deg', lift: '-3px' },
+]
+
 export default function GalleryPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTag, setSelectedTag] = useState('all')
@@ -149,12 +158,23 @@ export default function GalleryPage() {
           </div>
         </div>
 
-        <div className="grid cols-3">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: '0.85rem',
+            alignItems: 'start',
+          }}
+        >
           {filteredItems.map((item, idx) => (
             <div
               key={item.id}
               className="card mediaCard mediaLoad"
-              style={{ overflow: 'hidden', '--i': idx }}
+              style={{
+                overflow: 'hidden',
+                '--i': idx,
+                transform: `translateY(${collageFrames[idx % collageFrames.length].lift}) rotate(${collageFrames[idx % collageFrames.length].tilt})`,
+              }}
             >
               <button
                 type="button"
@@ -169,9 +189,8 @@ export default function GalleryPage() {
                 <div
                   style={{
                     width: '100%',
-                    aspectRatio: '4 / 3',
+                    aspectRatio: collageFrames[idx % collageFrames.length].ratio,
                     background: 'rgba(0, 0, 0, 0.24)',
-                    borderBottom: '1px solid rgba(255,255,255,0.10)',
                     padding: '0.35rem',
                   }}
                 >
@@ -189,12 +208,6 @@ export default function GalleryPage() {
                   />
                 </div>
               </button>
-              <div style={{ padding: '0.9rem' }}>
-                <div style={{ fontWeight: 700 }}>{item.title}</div>
-                <div style={{ marginTop: '0.5rem', color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
-                  {item.tags.join(' • ')}
-                </div>
-              </div>
             </div>
           ))}
         </div>
