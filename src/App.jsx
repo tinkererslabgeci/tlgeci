@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import emailjs from '@emailjs/browser'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { FaInstagram, FaLinkedinIn, FaWhatsapp } from 'react-icons/fa'
 import CursorPlane from './components/CursorPlane.jsx'
 import NavBar from './components/NavBar.jsx'
+import AIChat from './components/AIChat.jsx'
 import HomePage from './pages/HomePage.jsx'
 import EventsPage from './pages/EventsPage.jsx'
 import TeamPage from './pages/TeamPage.jsx'
@@ -26,6 +27,15 @@ export default function App() {
 function AppShell() {
   const location = useLocation()
   const isHome = location.pathname === '/'
+
+  useEffect(() => {
+    // Prevent the browser from automatically restoring the scroll position on reload
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+    // Always start at the top on route change or reload
+    window.scrollTo(0, 0)
+  }, [location.pathname])
   const [contactForm, setContactForm] = useState({
     name: '',
     countryCode: '+91',
@@ -110,6 +120,8 @@ function AppShell() {
       <div className="appBgLayer" aria-hidden="true">
         <CursorPlane />
       </div>
+
+      <AIChat />
 
       <div className="appFg">
         <NavBar deferMs={isHome ? 1800 : 0} />

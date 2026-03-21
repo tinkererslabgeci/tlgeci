@@ -2,6 +2,20 @@
 
 This folder contains a Google Apps Script web app you can deploy as a lightweight backend.
 
+## Separate Availability API for AI Prefill Flow
+If you want AI chat to check machine slot availability without touching the existing booking script, use:
+- [apps-script/Availability.gs](apps-script/Availability.gs)
+
+Deploy `Availability.gs` as a **separate Apps Script project** (new project) and copy its Web App URL.
+
+Then set in frontend env:
+- `VITE_AVAILABILITY_API_URL=<your availability web app url>`
+
+AI chat will:
+1. Ask for missing machine/date/time details.
+2. Call this availability endpoint.
+3. If available, ask confirmation and open a prefilled booking page.
+
 ## What it does
 - Reads existing bookings from a Google Sheet.
 - Checks **machine time-slot overlap** conflicts.

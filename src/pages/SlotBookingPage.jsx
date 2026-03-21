@@ -711,6 +711,52 @@ export default function SlotBookingPage() {
 
   const TIME_STEP_MINUTES = 5
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('prefill') !== '1') return
+
+    const machineParam = String(params.get('machine') || '').trim()
+    const dateParam = String(params.get('date') || '').trim()
+    const fromParam = String(params.get('timeFrom') || '').trim()
+    const toParam = String(params.get('timeTo') || '').trim()
+    const purposeParam = String(params.get('purpose') || '').trim()
+    const materialFromLabParam = String(params.get('materialFromLab') || '').trim()
+
+    const machineSet = new Set(MACHINE_OPTION_GROUPS.flatMap((g) => g.options || []))
+    const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+    const isValidTime = (v) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(v)
+
+    if (machineParam && machineSet.has(machineParam)) {
+      setCategories((prev) => {
+        const next = prev.filter((c) => c !== NONE_CATEGORY)
+        return next.includes('MACHINES') ? next : [...next, 'MACHINES']
+      })
+      setMachines([machineParam])
+    }
+
+    if (isValidDate) {
+      setDate(dateParam)
+    }
+
+    if (isValidTime(fromParam)) {
+      setTimeFrom(fromParam)
+    }
+
+    if (isValidTime(toParam)) {
+      setTimeTo(toParam)
+    }
+
+    if (purposeParam) {
+      setPurpose(purposeParam)
+    }
+
+    if (/^(yes|no)$/i.test(materialFromLabParam)) {
+      setMaterialFromLab(/^yes$/i.test(materialFromLabParam) ? 'Yes' : 'No')
+    }
+
+    setSheetStatus('Booking form prefilled from AI assistant. Please complete remaining details.')
+  }, [])
+
   function onDateChange(nextDate) {
     let safeDate = nextDate
     if (safeDate && todayStr && safeDate < todayStr) safeDate = todayStr
@@ -1392,6 +1438,19 @@ export default function SlotBookingPage() {
       return
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    const numericPhone = phone.trim().replace(/[\s-]/g, '')
+    const phoneRegex = /^\+?[0-9]{10,15}$/
+    if (!phoneRegex.test(numericPhone)) {
+      setError('Please enter a valid phone number (at least 10 digits).')
+      return
+    }
+
     const booking = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       name: name.trim(),
@@ -1564,12 +1623,13 @@ export default function SlotBookingPage() {
 
               <div>
                 <label className="label">Phone No</label>
-                <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" />
+                <input type="tel" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" />
               </div>
 
               <div>
                 <label className="label">Email ID</label>
                 <input
+                  type="email"
                   className="input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
