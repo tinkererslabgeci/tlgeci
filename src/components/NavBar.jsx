@@ -14,6 +14,7 @@ export default function NavBar({ deferMs = 0 }) {
   const [visible, setVisible] = useState(deferMs === 0)
   const [isMobile, setIsMobile] = useState(false)
   const [hiddenOnScroll, setHiddenOnScroll] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!deferMs) {
@@ -74,7 +75,7 @@ export default function NavBar({ deferMs = 0 }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [isMobile])
 
-  const hideHeader = isMobile && hiddenOnScroll
+  const hideHeader = isMobile && hiddenOnScroll && !isMenuOpen
   const headerOpacity = visible && !hideHeader ? 1 : 0
   const headerTransform = !visible ? 'translateY(-10px)' : hideHeader ? 'translateY(-110%)' : 'translateY(0)'
   const headerPointerEvents = visible && !hideHeader ? 'auto' : 'none'
@@ -122,25 +123,33 @@ export default function NavBar({ deferMs = 0 }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-end' }}>
-            <NavLink to="/" style={linkStyle} end>
-            Home
-            </NavLink>
+          {isMobile && (
+            <button
+              className="hamburgerBtn"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              <div className={`hamburgerLine ${isMenuOpen ? 'open' : ''}`} />
+              <div className={`hamburgerLine ${isMenuOpen ? 'open' : ''}`} />
+              <div className={`hamburgerLine ${isMenuOpen ? 'open' : ''}`} />
+            </button>
+          )}
 
-            <NavLink to="/events" style={linkStyle}>
-            Events
+          <nav className={isMobile ? `mobileNav ${isMenuOpen ? 'open' : ''}` : 'desktopNav'}>
+            <NavLink to="/" style={linkStyle} onClick={() => setIsMenuOpen(false)} end>
+              Home
             </NavLink>
-
-            <NavLink to="/team" style={linkStyle}>
-            Team
+            <NavLink to="/events" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
+              Events
             </NavLink>
-
-            <NavLink to="/gallery" style={linkStyle}>
-            Gallery
+            <NavLink to="/team" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
+              Team
             </NavLink>
-
-            <NavLink to="/booking" style={linkStyle}>
-            Slot Booking
+            <NavLink to="/gallery" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
+              Gallery
+            </NavLink>
+            <NavLink to="/booking" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
+              Slot Booking
             </NavLink>
           </nav>
         </div>
