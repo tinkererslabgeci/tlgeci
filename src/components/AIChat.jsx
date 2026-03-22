@@ -396,16 +396,45 @@ function parseBookingIntentDetails(text) {
   return { machine, date, timeFrom, timeTo }
 }
 
+function fuzzyMatchAny(words, targets, maxDistance = 2) {
+  for (const w of words) {
+    for (const t of targets) {
+      if (w === t) return true;
+      if (w.length < 5 || t.length < 5) continue; // Require at least 5 chars for fuzzy to avoid massive false positives
+      if (Math.abs(w.length - t.length) > 2) continue;
+      if (levenshteinDistance(w, t) <= maxDistance) return true;
+    }
+  }
+  return false;
+}
+
 function isLikelySlotIntent(text, parsed) {
   const lower = String(text || '').toLowerCase()
-  const slotWords = /\b(slot|book|booking|reserve|reservation|availability|available|time\s*slot|free\s*slot)\b/i
-  const typoAvailabilityWords = /\b(avaliable|availble|avaiable|availa?bility|availa?ble)\b/i
-  const timePhrase = /\b(from|to|today|tomorrow|am|pm|\d{1,2}:\d{2}|\d{1,2}\s*(am|pm))\b/i
-  const parsedSignal = Boolean(parsed?.machine || parsed?.date || parsed?.timeFrom || parsed?.timeTo)
+  const words = lower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
+  let score = 0;
+  
+  // 1. Direct explicit phrases
+  if (/\b(time\s*slot|free\s*slot)\b/i.test(lower)) score += 3;
 
-  if (slotWords.test(lower) || typoAvailabilityWords.test(lower)) return true
-  if (parsedSignal && timePhrase.test(lower)) return true
-  return false
+  // 2. Fuzzy match booking intent words
+  const bookingTargets = ["booking", "reserve", "reservation", "slot", "book"];
+  if (fuzzyMatchAny(words, bookingTargets, 2)) score += 2;
+  else if (/\b(book|slot)\b/i.test(lower)) score += 2; // Catch strict 4-letter words since fuzzy ignores them
+  
+  // 3. Fuzzy match availability words
+  const availabilityTargets = ["available", "availability", "avaliable"];
+  if (fuzzyMatchAny(words, availabilityTargets, 2)) score += 1;
+
+  // 4. Mentions time, date, or machine?
+  if (parsed?.machine) score += 2;
+  if (parsed?.date) score += 1;
+  if (parsed?.timeFrom || parsed?.timeTo) score += 1;
+  
+  const timePhrase = /\b(from|to|today|tomorrow|am|pm|\d{1,2}:\d{2}|\d{1,2}\s*(am|pm))\b/i
+  if (timePhrase.test(lower)) score += 1;
+
+  // Threshold: If score >= 3, it's very likely a machine booking intent.
+  return score >= 3;
 }
 
 function buildPrefillBookingUrl({ machine, date, timeFrom, timeTo, purpose, materialFromLab }) {
