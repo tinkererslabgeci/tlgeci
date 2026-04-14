@@ -223,7 +223,7 @@ export default function HomePage() {
               </h3>
 
               <div className="grid cols-3" style={{ marginTop: '0.75rem' }}>
-                {[{ src: '/equipment/machine-laser-cutter.svg', label: 'Laser cutter' }, { src: '/equipment/machine-3d-printer.svg', label: '3D printer' }, { src: '/equipment/machine-vinyl-cutter.svg', label: 'Vinyl cutter' }].map(
+                {[{ src: '/equipment/machine-laser-cutter.png', label: 'Laser cutter' }, { src: '/equipment/machine-3d-printer.png', label: '3D printer' }, { src: '/equipment/machine-vinyl-cutter.svg', label: 'Vinyl cutter' }].map(
                   (m, idx) => (
                     <div
                       key={m.label}
@@ -253,7 +253,7 @@ export default function HomePage() {
                 <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 0 }}>
                   <img
                     className="mediaImg"
-                    src="/equipment/machine-power-tools.svg"
+                    src="/equipment/machine-power-tools.png"
                     alt="Power tools"
                     loading="lazy"
                     style={{
