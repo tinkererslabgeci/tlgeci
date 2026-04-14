@@ -230,19 +230,28 @@ export default function HomePage() {
                       className="card mediaCard mediaLoad"
                       style={{ overflow: 'hidden', '--i': idx }}
                     >
-                      <img
-                        className="mediaImg"
-                        src={m.src}
-                        alt={m.label}
-                        loading="lazy"
+                      <div
                         style={{
                           width: '100%',
-                          height: 150,
-                          objectFit: 'cover',
-                          display: 'block',
+                          aspectRatio: '4 / 3',
+                          padding: '0.75rem',
+                          background: 'rgba(0, 0, 0, 0.18)',
                           borderBottom: '1px solid rgba(255,255,255,0.10)',
                         }}
-                      />
+                      >
+                        <img
+                          className="mediaImg"
+                          src={m.src}
+                          alt={m.label}
+                          loading="lazy"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                          }}
+                        />
+                      </div>
                       <div style={{ padding: '0.75rem 0.9rem', fontWeight: 750 }}>{m.label}</div>
                     </div>
                   )
@@ -251,19 +260,28 @@ export default function HomePage() {
 
               <div className="grid cols-2" style={{ marginTop: '1rem', alignItems: 'start' }}>
                 <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 0 }}>
-                  <img
-                    className="mediaImg"
-                    src="/equipment/machine-power-tools.png"
-                    alt="Power tools"
-                    loading="lazy"
+                  <div
                     style={{
                       width: '100%',
-                      height: 170,
-                      objectFit: 'cover',
-                      display: 'block',
+                      aspectRatio: '4 / 3',
+                      padding: '0.75rem',
+                      background: 'rgba(0, 0, 0, 0.18)',
                       borderBottom: '1px solid rgba(255,255,255,0.10)',
                     }}
-                  />
+                  >
+                    <img
+                      className="mediaImg"
+                      src="/equipment/machine-power-tools.png"
+                      alt="Power tools"
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
                   <div style={{ padding: '0.75rem 0.9rem', fontWeight: 750 }}>Power tools</div>
                 </div>
 
