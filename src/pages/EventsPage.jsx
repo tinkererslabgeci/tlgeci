@@ -65,12 +65,12 @@ function EventPosterCard({ event, index, showRegister, onOpen }) {
       </div>
       <div className="eventPosterBody">
         <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>{event.title}</div>
-        <div style={{ marginTop: "0.5rem", color: "rgba(255, 255, 255, 0.70)", lineHeight: 1.35 }}>
+        <div style={{ marginTop: "0.5rem", color: "var(--text-70)", lineHeight: 1.35 }}>
           {event.dateLabel} • {event.time}
           <br />
           {event.venue}
         </div>
-        <p className="eventDescriptionClamp" style={{ marginBottom: 0, marginTop: "0.65rem", color: "rgba(255, 255, 255, 0.80)", lineHeight: 1.6 }}>
+        <p className="eventDescriptionClamp" style={{ marginBottom: 0, marginTop: "0.65rem", color: "var(--text-80)", lineHeight: 1.6 }}>
           {event.description || "Click the poster to view full details."}
         </p>
 

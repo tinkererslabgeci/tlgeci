@@ -82,7 +82,7 @@ export default function GalleryPage() {
           style={{
             marginBottom: '1rem',
             padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: 'var(--panel)',
           }}
         >
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -94,9 +94,9 @@ export default function GalleryPage() {
                 flex: '1 1 240px',
                 minWidth: 220,
                 padding: '0.7rem 0.85rem',
-                background: 'rgba(0, 0, 0, 0.25)',
-                color: 'rgba(255, 255, 255, 0.92)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
+                background: 'var(--field-bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
                 borderRadius: 10,
               }}
             />
@@ -106,9 +106,9 @@ export default function GalleryPage() {
               onChange={(event) => setSelectedTag(event.target.value)}
               style={{
                 padding: '0.7rem 0.85rem',
-                background: 'rgba(0, 0, 0, 0.25)',
-                color: 'rgba(255, 255, 255, 0.92)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
+                background: 'var(--field-bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
                 borderRadius: 10,
               }}
             >
@@ -128,7 +128,7 @@ export default function GalleryPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '1rem',
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: 'var(--panel)',
           }}
         >
           <div
@@ -139,11 +139,12 @@ export default function GalleryPage() {
               background: 'transparent',
               display: 'grid',
               placeItems: 'center',
-              border: '1px solid rgba(255, 255, 255, 0.10)',
+              border: '1px solid var(--border)',
               flexShrink: 0,
             }}
           >
             <img
+              className="galleryLogo"
               src="/logo/tlgeci-logowhite.png"
               alt="TL GECI official logo"
               style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))' }}
@@ -152,7 +153,7 @@ export default function GalleryPage() {
 
           <div>
             <div style={{ fontWeight: 700 }}>Official Logo</div>
-            <div style={{ marginTop: '0.3rem', color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.94rem' }}>
+            <div style={{ marginTop: '0.3rem', color: 'var(--text-75)', fontSize: '0.94rem' }}>
               This is the official TL GECI identity mark.
             </div>
           </div>
@@ -190,7 +191,7 @@ export default function GalleryPage() {
                   style={{
                     width: '100%',
                     aspectRatio: collageFrames[idx % collageFrames.length].ratio,
-                    background: 'rgba(0, 0, 0, 0.24)',
+                    background: 'var(--panel-strong)',
                     padding: '0.35rem',
                   }}
                 >
@@ -213,7 +214,7 @@ export default function GalleryPage() {
         </div>
 
         {!filteredItems.length && (
-          <div style={{ marginTop: '1rem', color: 'rgba(255, 255, 255, 0.70)' }}>
+          <div style={{ marginTop: '1rem', color: 'var(--text-70)' }}>
             No photos found for this search/tag combination.
           </div>
         )}
@@ -226,7 +227,7 @@ export default function GalleryPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.82)',
+            background: 'color-mix(in srgb, var(--bg) 85%, transparent)',
             zIndex: 1200,
             display: 'grid',
             placeItems: 'center',
@@ -242,7 +243,7 @@ export default function GalleryPage() {
               padding: '1rem',
               display: 'grid',
               gap: '0.8rem',
-              background: 'rgba(20, 24, 32, 0.96)',
+              background: 'var(--bg)',
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -254,14 +255,14 @@ export default function GalleryPage() {
                 maxHeight: '72vh',
                 objectFit: 'contain',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.10)',
+                border: '1px solid var(--border)',
               }}
             />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{currentItem.title}</div>
-                <div style={{ marginTop: '0.25rem', color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.9rem' }}>{currentItem.tags.join(' • ')}</div>
+                <div style={{ marginTop: '0.25rem', color: 'var(--text-70)', fontSize: '0.9rem' }}>{currentItem.tags.join(' • ')}</div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>

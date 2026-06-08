@@ -15,6 +15,18 @@ export default function NavBar({ deferMs = 0 }) {
   const [isMobile, setIsMobile] = useState(false)
   const [hiddenOnScroll, setHiddenOnScroll] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }
 
   useEffect(() => {
     if (!deferMs) {
@@ -110,9 +122,9 @@ export default function NavBar({ deferMs = 0 }) {
             }}
           >
             <img
-              src="/logo/tlgeci-logowhite.png"
+              src={theme === 'dark' ? '/logo/tlgeci-logowhite.png' : '/logo/tlgeci-logoblack.png'}
               alt="TL GECI logo"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.2)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.2)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}
             />
           </div>
 
@@ -122,7 +134,24 @@ export default function NavBar({ deferMs = 0 }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button
+            className="themeToggleBtn"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? (
+              <svg className="themeToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg className="themeToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+
           {isMobile && (
             <button
               className="hamburgerBtn"

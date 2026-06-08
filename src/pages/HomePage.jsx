@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import anime from 'animejs'
+import AnimeGridRipple from '../components/AnimeGridRipple.jsx'
 
 const TITLE = 'TINKERERS\' LAB'
 
@@ -75,7 +78,20 @@ export default function HomePage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setAboutVisible(true)
+        if (entries.some((e) => e.isIntersecting)) {
+          setAboutVisible(true)
+          // Impressive Anime.js stagger for all cards when scrolled into view
+          anime({
+            targets: '.animeCard',
+            translateY: [60, 0],
+            scale: [0.95, 1],
+            opacity: [0, 1],
+            easing: 'easeOutElastic(1, .8)',
+            duration: 1200,
+            delay: anime.stagger(120, { start: 200 })
+          })
+          observer.disconnect()
+        }
       },
       { threshold: 0.12 }
     )
@@ -87,6 +103,7 @@ export default function HomePage() {
   return (
     <section className="intro" aria-label="Tinkerers Lab home">
       <div className={`introStage ${stageRevealed ? 'isRevealed' : ''}`.trim()}>
+        <AnimeGridRipple />
         <div className="introGlow introGlowA" />
         <div className="introGlow introGlowB" />
         <div className="introGlow introGlowC" />
@@ -109,9 +126,6 @@ export default function HomePage() {
         <FloatingIcon className="introIcon introIconChip" delay={0.75} label="Circuits">
           <ChipIcon />
         </FloatingIcon>
-
-        <div className="introCube introCubeA" aria-hidden="true" />
-        <div className="introCube introCubeB" aria-hidden="true" />
 
         <div className="introContent" aria-hidden="false">
           <div className="introQuotes" aria-label="Intro quote">
@@ -146,11 +160,11 @@ export default function HomePage() {
       <div id="about" ref={aboutRef} className={`introBelow ${aboutVisible ? 'isVisible' : ''}`}>
         <div className="container">
           <div className="sectionStack">
-            <section className="card toneA mediaLoad" style={{ padding: '1.4rem', '--i': 0 }}>
+            <section className="card toneA animeCard" style={{ padding: '1.4rem', '--i': 0, opacity: 0 }}>
               <h2 className="sectionH2" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
                 Tinkerers' Lab - GECI
               </h2>
-              <p style={{ color: 'rgba(255, 255, 255, 0.80)', marginTop: 0, lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text-80)', marginTop: 0, lineHeight: 1.6 }}>
                 Tinkerers' Lab GECI is a student operating makerspace that helps you create,innovate,increment and refine,transforming ideas into reality through hands-on experimenting,team work and learning.
               </p>
               <p>The lab provides an open environment where students from all disciplines come together to explore technology, experiment with concepts, and push the boundaries of what’s possible. Whether you’re a beginner taking your first step into electronics or an experienced builder working on advanced prototypes, the lab supports your journey.
@@ -164,7 +178,7 @@ export default function HomePage() {
                   <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
                     What you’ll do
                   </h3>
-                  <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'rgba(255, 255, 255, 0.80)', lineHeight: 1.7 }}>
+                  <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'var(--text-80)', lineHeight: 1.7 }}>
                     <li>Attend workshops and build sessions</li>
                     <li>Work on projects and prototypes</li>
                     <li>Learn with mentors and peers (student-run culture)</li>
@@ -175,14 +189,14 @@ export default function HomePage() {
                   <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
                     Who it’s for
                   </h3>
-                  <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.80)', lineHeight: 1.6 }}>
+                  <p style={{ margin: 0, color: 'var(--text-80)', lineHeight: 1.6 }}>
                     Beginners to advanced,anyone curious. If you want to build something real, this is your place.
                   </p>
                 </div>
               </div>
             </section>
 
-            <section className="card toneB" style={{ padding: '1.4rem' }}>
+            <section className="card toneB animeCard" style={{ padding: '1.4rem', opacity: 0 }}>
               <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.8 rem' }}>
                 What’s happening in TL GECI
               </h3>
@@ -190,8 +204,8 @@ export default function HomePage() {
                 {HAPPENINGS.map((h, idx) => (
                   <div
                     key={h.title}
-                    className="card mediaCard mediaLoad"
-                    style={{ overflow: 'hidden', '--i': idx }}
+                    className="card mediaCard animeCard"
+                    style={{ overflow: 'hidden', '--i': idx, opacity: 0 }}
                   >
                     <img
                       className="mediaImg"
@@ -203,12 +217,12 @@ export default function HomePage() {
                         height: 140,
                         objectFit: 'cover',
                         display: 'block',
-                        borderBottom: '1px solid rgba(255,255,255,0.10)',
+                        borderBottom: '1px solid var(--border)',
                       }}
                     />
                     <div style={{ padding: '0.9rem' }}>
                       <div style={{ fontWeight: 750 }}>{h.title}</div>
-                      <p style={{ margin: '0.45rem 0 0', color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.8 }}>
+                      <p style={{ margin: '0.45rem 0 0', color: 'var(--text-78)', lineHeight: 1.8 }}>
                         {h.description}
                       </p>
                     </div>
@@ -217,95 +231,59 @@ export default function HomePage() {
               </div>
             </section>
 
-            <section className="card toneC" style={{ padding: '1.4rem' }}>
-              <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
-                Equipment & tools
-              </h3>
-
-              <div className="grid cols-3" style={{ marginTop: '0.75rem' }}>
-                {[{ src: '/equipment/machine-laser-cutter.png', label: 'Laser cutter' }, { src: '/equipment/machine-3d-printer.png', label: '3D printer' }, { src: '/equipment/machine-vinyl-cutter.svg', label: 'Vinyl cutter' }].map(
-                  (m, idx) => (
-                    <div
-                      key={m.label}
-                      className="card mediaCard mediaLoad"
-                      style={{ overflow: 'hidden', '--i': idx }}
-                    >
-                      <div
-                        style={{
-                          width: '100%',
-                          aspectRatio: '4 / 3',
-                          padding: '0.75rem',
-                          background: 'rgba(0, 0, 0, 0.18)',
-                          borderBottom: '1px solid rgba(255,255,255,0.10)',
-                        }}
-                      >
-                        <img
-                          className="mediaImg"
-                          src={m.src}
-                          alt={m.label}
-                          loading="lazy"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            display: 'block',
-                          }}
-                        />
-                      </div>
-                      <div style={{ padding: '0.75rem 0.9rem', fontWeight: 750 }}>{m.label}</div>
-                    </div>
-                  )
-                )}
+            <section className="facilitiesCard animeCard" style={{ opacity: 0 }}>
+              <div className="facilitiesHeader">
+                <h3 className="facilitiesTitle">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  Our Facilities
+                </h3>
+                <Link to="/booking" className="facilitiesLink">
+                  View all facilities <span>&rarr;</span>
+                </Link>
               </div>
 
-              <div className="grid cols-2" style={{ marginTop: '1rem', alignItems: 'start' }}>
-                <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 0 }}>
-                  <div
-                    style={{
-                      width: '100%',
-                      aspectRatio: '4 / 3',
-                      padding: '0.75rem',
-                      background: 'rgba(0, 0, 0, 0.18)',
-                      borderBottom: '1px solid rgba(255,255,255,0.10)',
-                    }}
-                  >
-                    <img
-                      className="mediaImg"
-                      src="/equipment/machine-power-tools.png"
-                      alt="Power tools"
-                      loading="lazy"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        display: 'block',
-                      }}
-                    />
+              <div className="facilitiesGrid">
+                <Link to="/booking" className="facilityItem">
+                  <div className="facilityIconWrapper">
+                    <Printer3DIcon />
                   </div>
-                  <div style={{ padding: '0.75rem 0.9rem', fontWeight: 750 }}>Power tools</div>
-                </div>
+                  <div className="facilityLabel">3D Printing</div>
+                </Link>
 
-                <div className="card mediaCard mediaLoad" style={{ overflow: 'hidden', '--i': 1 }}>
-                  <img
-                    className="mediaImg"
-                    src="/equipment/machine-electronics.svg"
-                    alt="Electronic equipments"
-                    loading="lazy"
-                    style={{
-                      width: '100%',
-                      height: 170,
-                      objectFit: 'cover',
-                      display: 'block',
-                      borderBottom: '1px solid rgba(255,255,255,0.10)',
-                    }}
-                  />
-                  <div style={{ padding: '0.75rem 0.9rem', fontWeight: 750 }}>Electronic equipments</div>
-                </div>
+                <Link to="/booking" className="facilityItem">
+                  <div className="facilityIconWrapper">
+                    <LaserCutterIcon />
+                  </div>
+                  <div className="facilityLabel">Laser Cutting</div>
+                </Link>
+
+                <Link to="/booking" className="facilityItem">
+                  <div className="facilityIconWrapper">
+                    <VinylCutterIcon />
+                  </div>
+                  <div className="facilityLabel">Vinyl Cutting</div>
+                </Link>
+
+                <Link to="/booking" className="facilityItem">
+                  <div className="facilityIconWrapper">
+                    <PowerToolsIcon />
+                  </div>
+                  <div className="facilityLabel">Power Tools</div>
+                </Link>
+
+                <Link to="/booking" className="facilityItem">
+                  <div className="facilityIconWrapper">
+                    <ElectronicWorkbenchIcon />
+                  </div>
+                  <div className="facilityLabel">Electronics Workbench</div>
+                </Link>
               </div>
-
             </section>
 
-            <section className="card toneD" style={{ padding: '1.4rem' }}>
+            <section className="card toneD animeCard" style={{ padding: '1.4rem', opacity: 0 }}>
               <h3 className="sectionH3" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
                 Lab snapshots
               </h3>
@@ -313,8 +291,8 @@ export default function HomePage() {
                 {SNAPSHOTS.map((s, idx) => (
                   <div
                     key={s.alt}
-                    className="card mediaCard mediaLoad"
-                    style={{ overflow: 'hidden', '--i': idx }}
+                    className="card mediaCard animeCard"
+                    style={{ overflow: 'hidden', '--i': idx, opacity: 0 }}
                   >
                     <img
                       className="mediaImg"
@@ -326,13 +304,13 @@ export default function HomePage() {
                         height: 170,
                         objectFit: 'cover',
                         display: 'block',
-                        borderBottom: '1px solid rgba(255,255,255,0.10)',
+                        borderBottom: '1px solid var(--border)',
                       }}
                     />
                   </div>
                 ))}
               </div>
-              <p style={{ margin: '0.75rem 0 0', color: 'rgba(255, 255, 255, 0.70)', lineHeight: 1.6 }}>
+              <p style={{ margin: '0.75rem 0 0', color: 'var(--text-70)', lineHeight: 1.6 }}>
               </p>
             </section>
           </div>
@@ -467,6 +445,85 @@ function ChipIcon() {
           strokeLinecap="round"
         />
       ))}
+    </svg>
+  )
+}
+
+function Printer3DIcon() {
+  return (
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="print-head">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="7" x2="21" y2="7" />
+      <line x1="3" y1="12" x2="21" y2="12" strokeWidth="1" strokeDasharray="3 3" />
+      <g className="print-head">
+        <path d="M10 7v3h4V7h-4z" fill="currentColor" fillOpacity="0.1" />
+        <path d="M12 10l-1 2h2l-1-2" fill="currentColor" />
+      </g>
+      <line x1="5" y1="18" x2="19" y2="18" strokeWidth="1.5" />
+      <path d="M9 18l1-4h4l1 4H9z" fill="currentColor" fillOpacity="0.15" strokeWidth="1.5" />
+      <line x1="6" y1="7" x2="6" y2="18" strokeWidth="0.8" />
+      <line x1="18" y1="7" x2="18" y2="18" strokeWidth="0.8" />
+    </svg>
+  )
+}
+
+function LaserCutterIcon() {
+  return (
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <rect x="4" y="6" width="16" height="10" rx="1" strokeWidth="1.2" />
+      <line x1="4" y1="9" x2="20" y2="9" strokeWidth="1" />
+      <rect x="10" y="8" width="4" height="3" rx="0.5" fill="currentColor" fillOpacity="0.15" />
+      <line x1="12" y1="11" x2="12" y2="14" strokeWidth="1.5" strokeDasharray="2 2" className="laser-beam" style={{ color: 'var(--link)' }} />
+      <circle cx="12" cy="14" r="1" fill="currentColor" className="laser-beam" />
+      <path d="M8 14.5l2-1h4l2 1" strokeWidth="1.2" />
+      <path d="M7 16h10" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+function VinylCutterIcon() {
+  return (
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="18" height="8" rx="1" />
+      <rect x="5" y="14" width="14" height="4" rx="1" strokeWidth="1.2" />
+      <path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9" strokeWidth="1.5" />
+      <circle cx="18" cy="10" r="0.8" fill="currentColor" />
+      <line x1="16" y1="8" x2="19" y2="8" strokeWidth="0.8" />
+      <g className="vinyl-head">
+        <rect x="9" y="8" width="3" height="4" rx="0.5" fill="currentColor" fillOpacity="0.2" />
+        <path d="M10.5 12v2.5l-1-1" strokeWidth="1.2" />
+      </g>
+      <path d="M8 16c2-1 4 1 6-0.5s2-2.5 3-1" strokeWidth="1" strokeDasharray="2 2" />
+    </svg>
+  )
+}
+
+function PowerToolsIcon() {
+  return (
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="wrench-screwdriver">
+      <path d="M14.7 9.3l5.5 5.5a2.5 2.5 0 0 1-3.5 3.5l-5.5-5.5" />
+      <path d="M10.2 4.8a4 4 0 0 0-5.7 5.7l1.8-1.8a1.5 1.5 0 0 1 2.1 0 1.5 1.5 0 0 1 0 2.1l-1.8 1.8a4 4 0 0 0 5.7-5.7l-2.1 2.1" fill="currentColor" fillOpacity="0.1" />
+      
+      <path d="M15.5 4.5l4 4-2.5 2.5-4-4 2.5-2.5z" fill="currentColor" fillOpacity="0.15" />
+      <line x1="14.5" y1="8.5" x2="7" y2="16" strokeWidth="2" />
+      <line x1="7" y1="16" x2="4.5" y2="18.5" strokeWidth="2.5" />
+      <path d="M4.5 18.5l-1.5 2 2-1.5-.5-.5z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function ElectronicWorkbenchIcon() {
+  return (
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <rect x="4" y="6" width="12" height="12" rx="1" fill="currentColor" fillOpacity="0.05" />
+      <line x1="4" y1="12" x2="16" y2="12" strokeWidth="0.6" strokeDasharray="2 2" />
+      <line x1="10" y1="6" x2="10" y2="18" strokeWidth="0.6" strokeDasharray="2 2" />
+      <path d="M4 12c1.5-4 2.5-4 4 0s2.5 4 4 0 2.5-4 4 0" strokeWidth="1.8" stroke="var(--link)" className="oscilloscope-wave" />
+      <circle cx="19" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="19" cy="16" r="1" />
     </svg>
   )
 }

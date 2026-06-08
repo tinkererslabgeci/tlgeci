@@ -627,7 +627,7 @@ function SearchMultiSelectDropdown({
               return rows
             })}
             {filteredGroups.length === 0 ? (
-              <div style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: '0.92rem' }}>No matches</div>
+              <div style={{ color: 'var(--text-55)', fontSize: '0.92rem' }}>No matches</div>
             ) : null}
           </div>
         </div>
@@ -641,7 +641,7 @@ function MultiSelect({ options, value, onChange }) {
     <div style={{ display: 'grid', gap: '0.5rem' }}>
       <div style={{ display: 'grid', gap: '0.35rem' }}>
         {options.map((opt) => (
-          <label key={opt} style={{ display: 'flex', gap: '0.55rem', alignItems: 'center', color: 'rgba(255, 255, 255, 0.82)' }}>
+          <label key={opt} style={{ display: 'flex', gap: '0.55rem', alignItems: 'center', color: 'var(--text-80)' }}>
             <input
               type="checkbox"
               checked={value.includes(opt)}
@@ -655,9 +655,9 @@ function MultiSelect({ options, value, onChange }) {
         ))}
       </div>
       {value.length ? (
-        <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.92rem' }}>{value.length} selected</div>
+        <div style={{ color: 'var(--text-70)', fontSize: '0.92rem' }}>{value.length} selected</div>
       ) : (
-        <div style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: '0.92rem' }}>Select one or more</div>
+        <div style={{ color: 'var(--text-55)', fontSize: '0.92rem' }}>Select one or more</div>
       )}
     </div>
   )
@@ -1689,13 +1689,13 @@ export default function SlotBookingPage() {
                       return (
                         <label
                           key={c}
-                          style={{ display: 'flex', gap: '0.55rem', alignItems: 'center', color: 'rgba(255, 255, 255, 0.82)' }}
+                          style={{ display: 'flex', gap: '0.55rem', alignItems: 'center', color: 'var(--text-80)' }}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={(e) => {
-                              if (e.target.checked) onCategoriesChange([...categories, c])
+                               if (e.target.checked) onCategoriesChange([...categories, c])
                               else onCategoriesChange(categories.filter((x) => x !== c))
                             }}
                           />
@@ -1704,7 +1704,7 @@ export default function SlotBookingPage() {
                       )
                     })}
                   </div>
-                  <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.92rem' }}>
+                  <div style={{ marginTop: '0.55rem', color: 'var(--text-62)', fontSize: '0.92rem' }}>
                     Select at least one (choose NONE if not applicable)
                   </div>
                 </div>
@@ -1740,13 +1740,13 @@ export default function SlotBookingPage() {
                               }}
                             >
                               <div style={{ lineHeight: 1.4 }}>
-                                <div style={{ color: 'rgba(255, 255, 255, 0.80)' }}>{it}</div>
+                                <div style={{ color: 'var(--text-80)' }}>{it}</div>
                                 {Number.isFinite(left) ? (
-                                  <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                                  <div style={{ marginTop: '0.2rem', color: 'var(--text-62)', fontSize: '0.85rem' }}>
                                     Left: {left}
                                   </div>
                                 ) : Number.isFinite(total) ? (
-                                  <div style={{ marginTop: '0.2rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                                  <div style={{ marginTop: '0.2rem', color: 'var(--text-62)', fontSize: '0.85rem' }}>
                                     Total: {total}
                                   </div>
                                 ) : null}
@@ -1768,12 +1768,12 @@ export default function SlotBookingPage() {
                         })}
                       </div>
                     ) : (
-                      <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
+                      <div style={{ marginTop: '0.55rem', color: 'var(--text-75)', lineHeight: 1.5 }}>
                         {sec.value.join(', ')}
                       </div>
                     )
                   ) : (
-                    <div style={{ marginTop: '0.55rem', color: 'rgba(255, 255, 255, 0.55)' }}>Select at least one</div>
+                    <div style={{ marginTop: '0.55rem', color: 'var(--text-55)' }}>Select at least one</div>
                   )}
                 </div>
               ))}
@@ -1781,7 +1781,7 @@ export default function SlotBookingPage() {
               {needsMaterialQuestions ? (
                 <div className="card" style={{ padding: '0.9rem' }}>
                   <div style={{ fontWeight: 800, marginBottom: '0.55rem' }}>Material requirement (for selected machines)</div>
-                  <div style={{ color: 'rgba(255, 255, 255, 0.68)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>
+                  <div style={{ color: 'var(--text-68)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>
                     Applicable for: {materialEligibleMachines.join(', ')}
                   </div>
 
@@ -1805,7 +1805,7 @@ export default function SlotBookingPage() {
                             placeholder="Select consumables…"
                             searchPlaceholder="Search consumables…"
                           />
-                          <div style={{ marginTop: '0.4rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.85rem' }}>
+                          <div style={{ marginTop: '0.4rem', color: 'var(--text-62)', fontSize: '0.85rem' }}>
                             If already chosen in TOOLS / SAFETY / CONSUMABLES, no need to select again.
                           </div>
                         </div>
@@ -1835,7 +1835,7 @@ export default function SlotBookingPage() {
                                     alignItems: 'center',
                                   }}
                                 >
-                                  <div style={{ lineHeight: 1.4, color: 'rgba(255, 255, 255, 0.80)' }}>{it}</div>
+                                  <div style={{ lineHeight: 1.4, color: 'var(--text-80)' }}>{it}</div>
                                   <input
                                     className="input"
                                     type="number"
@@ -1874,14 +1874,14 @@ export default function SlotBookingPage() {
                                 </div>
                               )
                             })}
-                            <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                            <div style={{ color: 'var(--text-70)', fontSize: '0.88rem' }}>
                               Fill meters only for filament materials. For acrylic/MDF/vinyl materials, fill area.
                             </div>
-                            <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                            <div style={{ color: 'var(--text-70)', fontSize: '0.88rem' }}>
                               Synced total consumables quantity: {materialConsumablesTotalQty}
                             </div>
                             {hasSelectedFilamentConsumable ? (
-                              <div style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.88rem' }}>
+                              <div style={{ color: 'var(--text-70)', fontSize: '0.88rem' }}>
                                 Total filament from selected spool materials: {materialFilamentMeters || '0'} m
                               </div>
                             ) : null}
@@ -1900,7 +1900,7 @@ export default function SlotBookingPage() {
               <div>
                 <label className="label">TOTAL (auto-generated)</label>
                 <textarea className="input" value={totalText} readOnly rows={4} style={{ resize: 'vertical', opacity: 0.95 }} />
-                <div style={{ marginTop: '0.45rem', color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.92rem' }}>
+                <div style={{ marginTop: '0.45rem', color: 'var(--text-62)', fontSize: '0.92rem' }}>
                 </div>
               </div>
 
@@ -1962,7 +1962,7 @@ export default function SlotBookingPage() {
               {submitNotice ? (
                 <div className="card" style={{ padding: '0.85rem 0.95rem', borderColor: 'rgba(120, 220, 170, 0.55)' }}>
                   <div style={{ fontWeight: 800, marginBottom: '0.35rem' }}>{submitNotice.title}</div>
-                  <div style={{ color: 'rgba(255, 255, 255, 0.84)', marginBottom: submitNotice.pdfUrl ? '0.65rem' : '0.45rem' }}>
+                  <div style={{ color: 'var(--text-80)', marginBottom: submitNotice.pdfUrl ? '0.65rem' : '0.45rem' }}>
                     {submitNotice.message}
                   </div>
                   <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -1991,9 +1991,9 @@ export default function SlotBookingPage() {
 
               {appsScriptConfigured ? (
                 sheetError || sheetStatus || sheetResult?.conflicts?.length ? (
-                  <div className="card" style={{ padding: '0.75rem 0.9rem', borderColor: 'rgba(255, 255, 255, 0.16)' }}>
+                  <div className="card" style={{ padding: '0.75rem 0.9rem', borderColor: 'var(--border)' }}>
                     <div style={{ fontWeight: 800, marginBottom: '0.35rem' }}>Availability check</div>
-                    {sheetStatus ? <div style={{ color: 'rgba(255, 255, 255, 0.75)' }}>{sheetStatus}</div> : null}
+                    {sheetStatus ? <div style={{ color: 'var(--text-75)' }}>{sheetStatus}</div> : null}
                     {sheetError ? (
                       <div style={{ marginTop: '0.35rem', color: 'rgba(255, 120, 120, 0.85)' }}>{sheetError}</div>
                     ) : null}
@@ -2002,7 +2002,7 @@ export default function SlotBookingPage() {
                       <div style={{ marginTop: '0.55rem', display: 'grid', gap: '0.35rem' }}>
                         <div style={{ color: 'rgba(255, 120, 120, 0.95)', fontWeight: 700 }}>Conflicts</div>
                         {sheetResult.conflicts.map((c, idx) => (
-                          <div key={idx} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: '0.92rem', lineHeight: 1.45 }}>
+                          <div key={idx} style={{ color: 'var(--text-78)', fontSize: '0.92rem', lineHeight: 1.45 }}>
                             {c.kind === 'machine'
                               ? `${c.item} is already booked (${c.existing?.from}–${c.existing?.to})` +
                               (c.existing?.name ? ` by ${c.existing.name}` : '')
@@ -2014,9 +2014,9 @@ export default function SlotBookingPage() {
 
                     {Array.isArray(sheetResult?.warnings) && sheetResult.warnings.length ? (
                       <div style={{ marginTop: '0.55rem', display: 'grid', gap: '0.35rem' }}>
-                        <div style={{ color: 'rgba(255, 255, 255, 0.75)', fontWeight: 700 }}>Warnings</div>
+                        <div style={{ color: 'var(--text-75)', fontWeight: 700 }}>Warnings</div>
                         {sheetResult.warnings.slice(0, 8).map((w, idx) => (
-                          <div key={idx} style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.9rem', lineHeight: 1.45 }}>
+                          <div key={idx} style={{ color: 'var(--text-70)', fontSize: '0.9rem', lineHeight: 1.45 }}>
                             {w.kind === 'missingInventory' ? `Not found in Inventory sheet: ${w.item}` : JSON.stringify(w)}
                           </div>
                         ))}
@@ -2025,9 +2025,9 @@ export default function SlotBookingPage() {
 
                     {sheetResult?.suggestions && Object.keys(sheetResult.suggestions).length ? (
                       <div style={{ marginTop: '0.55rem', display: 'grid', gap: '0.3rem' }}>
-                        <div style={{ color: 'rgba(255, 255, 255, 0.75)', fontWeight: 700 }}>Next free slot suggestions</div>
+                        <div style={{ color: 'var(--text-75)', fontWeight: 700 }}>Next free slot suggestions</div>
                         {Object.entries(sheetResult.suggestions).map(([machine, s]) => (
-                          <div key={machine} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: '0.92rem' }}>
+                          <div key={machine} style={{ color: 'var(--text-78)', fontSize: '0.92rem' }}>
                             {machine}: {s.from} → {s.to}
                           </div>
                         ))}
@@ -2081,7 +2081,7 @@ export default function SlotBookingPage() {
               ) : null}
 
               {appsScriptConfigured && !availabilityOk ? (
-                <div style={{ color: 'rgba(255, 255, 255, 0.62)', fontSize: '0.92rem' }}>
+                <div style={{ color: 'var(--text-62)', fontSize: '0.92rem' }}>
                   Check availability to enable submission.
                 </div>
               ) : null}
@@ -2091,7 +2091,7 @@ export default function SlotBookingPage() {
                   href={GOOGLE_FORM_VIEW_URL}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: 'rgba(255, 255, 255, 0.70)', fontSize: '0.92rem' }}
+                  style={{ color: 'var(--text-70)', fontSize: '0.92rem' }}
                 >
                   Open the Google Form
                 </a>
@@ -2105,19 +2105,12 @@ export default function SlotBookingPage() {
               <iframe
                 title="Lab schedule calendar"
                 src={GOOGLE_CALENDAR_EMBED_URL}
-                style={{
-                  width: '100%',
-                  height: 620,
-                  border: 0,
-                  borderRadius: 10,
-                  colorScheme: 'light',
-                  filter: 'invert(1) hue-rotate(180deg) contrast(0.85) brightness(0.9)'
-                }}
+                className="calendarIframe"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
             ) : (
-              <p style={{ marginTop: 0, color: 'rgba(255, 255, 255, 0.70)', lineHeight: 1.5 }}>
+              <p style={{ marginTop: 0, color: 'var(--text-70)', lineHeight: 1.5 }}>
                 Calendar is not configured yet. Set <b>GOOGLE_CALENDAR_EMBED_URL</b> in this file to your Google Calendar embed link.
               </p>
             )}
