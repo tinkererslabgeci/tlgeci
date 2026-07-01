@@ -124,4 +124,19 @@ export const allEvents = [
     posterAlt: '3D printing workshop poster',
     slug: 'leap-workshop-3d-printing',
   },
+  {
+    title: 'Execom Call',
+    dateLabel: '2026-07-02',
+    startDate: '2026-07-02',
+    endDate: '2026-07-07',
+    venue: 'Tinkerers Lab, GECI',
+    description:
+      'Execom call for new members: join the team, learn about roles, and contribute to lab activities.',
+    fullDescription:
+      '',
+    registrationUrl: 'https://forms.gle/Y2mgZy3wudJD9tuG7',
+    posterSrc: '/posters/events/execom.jpeg',
+    posterAlt: 'Execom call poster',
+    slug: 'execom-call',
+  },
 ]
