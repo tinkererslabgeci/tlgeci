@@ -126,8 +126,8 @@ export const allEvents = [
   },
   {
     title: 'Execom Call',
-    dateLabel: '2026-07-02',
-    startDate: '2026-07-02',
+    dateLabel: '2026-07-01',
+    startDate: '2026-07-01',  
     endDate: '2026-07-07',
     venue: 'Tinkerers Lab, GECI',
     description:
