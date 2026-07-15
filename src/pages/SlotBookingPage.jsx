@@ -319,7 +319,7 @@ function CustomDatePicker({ value, onChange, minDate, maxDate }) {
   }
 
   return (
-    <div ref={rootRef} className="picker">
+    <div ref={rootRef} className={`picker ${open ? 'is-open' : ''}`}>
       <PickerTrigger value={value} placeholder="Select date" onClick={() => setOpen((v) => !v)} iconType="date" />
 
       {open ? (
@@ -440,7 +440,7 @@ function CustomTimePicker({ value, onChange, minTime, stepMinutes = 15, placehol
   }
 
   return (
-    <div ref={rootRef} className="picker">
+    <div ref={rootRef} className={`picker ${open ? 'is-open' : ''}`}>
       <PickerTrigger
         value={value ? formatTime12(value) : ''}
         placeholder={placeholder}
@@ -572,7 +572,7 @@ function SearchMultiSelectDropdown({
   }, [value, placeholder])
 
   return (
-    <div ref={rootRef} className="dd">
+    <div ref={rootRef} className={`dd ${open ? 'is-open' : ''}`}>
       <button type="button" className="input ddTrigger" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <span style={{ opacity: value.length ? 1 : 0.7 }}>{selectedLabel}</span>
         <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>{open ? '▲' : '▼'}</span>

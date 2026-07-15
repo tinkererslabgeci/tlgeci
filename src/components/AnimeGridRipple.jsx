@@ -5,6 +5,21 @@ export default function AnimeGridRipple() {
   const containerRef = useRef(null);
   const [grid, setGrid] = useState({ cols: 0, rows: 0 });
   const [dots, setDots] = useState([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const activeAnims = useRef(0);
+
+  const startAnim = () => {
+    activeAnims.current++;
+    setIsAnimating(true);
+  };
+
+  const endAnim = () => {
+    activeAnims.current--;
+    if (activeAnims.current <= 0) {
+      activeAnims.current = 0;
+      setIsAnimating(false);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -29,19 +44,18 @@ export default function AnimeGridRipple() {
   }, []);
 
   const handleClick = (e) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || grid.cols === 0 || grid.rows === 0) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    const size = 50;
-    const col = Math.floor(x / size);
-    const row = Math.floor(y / size);
-    let index = row * grid.cols + col;
-    
-    if (index < 0) index = 0;
-    if (index >= dots.length) index = dots.length - 1;
 
+    const colWidth = rect.width / grid.cols;
+    const rowHeight = rect.height / grid.rows;
+    const col = Math.min(grid.cols - 1, Math.max(0, Math.floor(x / colWidth)));
+    const row = Math.min(grid.rows - 1, Math.max(0, Math.floor(y / rowHeight)));
+    const index = row * grid.cols + col;
+
+    startAnim();
     anime({
       targets: '.anime-dot',
       scale: [
@@ -56,29 +70,65 @@ export default function AnimeGridRipple() {
         { value: 0.8, easing: 'easeOutSine', duration: 250 },
         { value: 0.15, easing: 'easeInOutQuad', duration: 800 }
       ],
-      delay: anime.stagger(50, { grid: [grid.cols, grid.rows], from: index })
+      delay: anime.stagger(50, { grid: [grid.cols, grid.rows], from: index }),
+      complete: endAnim
     });
   };
 
-  // Add an initial automated ripple to draw attention
+  // Add initial and recurring automated ripples for background dynamism
   useEffect(() => {
-    if (grid.cols > 0 && grid.rows > 0) {
-      setTimeout(() => {
-        const centerIndex = Math.floor((grid.rows / 2)) * grid.cols + Math.floor(grid.cols / 2);
-        anime({
-          targets: '.anime-dot',
-          scale: [
-            { value: 2, easing: 'easeOutSine', duration: 250 },
-            { value: 1, easing: 'easeOutElastic(1, .6)', duration: 800 }
-          ],
-          opacity: [
-            { value: 0.5, easing: 'easeOutSine', duration: 250 },
-            { value: 0.15, easing: 'easeInOutQuad', duration: 800 }
-          ],
-          delay: anime.stagger(50, { grid: [grid.cols, grid.rows], from: centerIndex })
-        });
-      }, 1000);
-    }
+    if (grid.cols === 0 || grid.rows === 0) return undefined;
+
+    // Initial center wave
+    const t = setTimeout(() => {
+      const centerIndex = Math.floor((grid.rows / 2)) * grid.cols + Math.floor(grid.cols / 2);
+      startAnim();
+      anime({
+        targets: '.anime-dot',
+        scale: [
+          { value: 2, easing: 'easeOutSine', duration: 250 },
+          { value: 1, easing: 'easeOutElastic(1, .6)', duration: 800 }
+        ],
+        opacity: [
+          { value: 0.5, easing: 'easeOutSine', duration: 250 },
+          { value: 0.15, easing: 'easeInOutQuad', duration: 800 }
+        ],
+        delay: anime.stagger(50, { grid: [grid.cols, grid.rows], from: centerIndex }),
+        complete: endAnim
+      });
+    }, 1000);
+
+    // Recurring gentle corner/center sweeps every 12 seconds
+    const interval = setInterval(() => {
+      const corners = [
+        0, // top-left
+        grid.cols - 1, // top-right
+        grid.cols * (grid.rows - 1), // bottom-left
+        grid.cols * grid.rows - 1, // bottom-right
+        Math.floor((grid.rows / 2)) * grid.cols + Math.floor(grid.cols / 2) // center
+      ];
+      const randomIndex = corners[Math.floor(Math.random() * corners.length)];
+
+      startAnim();
+      anime({
+        targets: '.anime-dot',
+        scale: [
+          { value: 1.8, easing: 'easeOutSine', duration: 250 },
+          { value: 1, easing: 'easeOutElastic(1, .6)', duration: 800 }
+        ],
+        opacity: [
+          { value: 0.45, easing: 'easeOutSine', duration: 250 },
+          { value: 0.15, easing: 'easeInOutQuad', duration: 800 }
+        ],
+        delay: anime.stagger(50, { grid: [grid.cols, grid.rows], from: randomIndex }),
+        complete: endAnim
+      });
+    }, 12000);
+
+    return () => {
+      clearTimeout(t);
+      clearInterval(interval);
+    };
   }, [grid.cols, grid.rows]);
 
   return (
@@ -86,6 +136,7 @@ export default function AnimeGridRipple() {
       ref={containerRef}
       onClick={handleClick}
       aria-hidden="true"
+      className={`anime-grid-container ${isAnimating ? 'is-animating' : ''}`.trim()}
       style={{
         position: 'absolute',
         top: 0,
@@ -96,11 +147,12 @@ export default function AnimeGridRipple() {
         gridTemplateColumns: `repeat(${grid.cols}, 1fr)`,
         gridTemplateRows: `repeat(${grid.rows}, 1fr)`,
         placeItems: 'center',
-        zIndex: 0, // Behind the text but over the background
-        color: 'var(--link, rgba(128, 192, 255, 1))', // Adapt to active CSS variables without hardcoding colors
+        zIndex: 0,
+        color: 'var(--link, rgba(128, 192, 255, 1))',
         cursor: 'crosshair',
         maskImage: 'linear-gradient(to bottom, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%)',
+        pointerEvents: 'auto',
       }}
     >
       {dots.map((i) => (
@@ -113,8 +165,9 @@ export default function AnimeGridRipple() {
             backgroundColor: 'currentColor',
             opacity: 0.15,
             borderRadius: '50%',
-            pointerEvents: 'none',
-            boxShadow: '0 0 6px currentColor'
+            boxShadow: '0 0 6px currentColor',
+            transition: 'transform 0.25s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.25s, color 0.25s',
+            pointerEvents: 'auto',
           }}
         />
       ))}

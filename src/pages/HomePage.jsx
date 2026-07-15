@@ -359,8 +359,8 @@ function ToolIcon() {
     <svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
       <defs>
         <linearGradient id="gTool" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="rgba(255, 255, 255, 0.92)" />
-          <stop offset="1" stopColor="rgba(255, 255, 255, 0.70)" />
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.92" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0.70" />
         </linearGradient>
       </defs>
       <path
@@ -377,8 +377,8 @@ function RobotIcon() {
     <svg viewBox="0 0 64 64" width="58" height="58" aria-hidden="true">
       <defs>
         <linearGradient id="gRobot" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="rgba(255, 255, 255, 0.90)" />
-          <stop offset="1" stopColor="rgba(255, 255, 255, 0.62)" />
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.90" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0.62" />
         </linearGradient>
       </defs>
       <path
@@ -386,21 +386,22 @@ function RobotIcon() {
         fill="url(#gRobot)"
         opacity="0.95"
       />
-      <circle cx="24" cy="30" r="5" fill="rgba(11, 18, 32, 0.85)" />
-      <circle cx="40" cy="30" r="5" fill="rgba(11, 18, 32, 0.85)" />
+      <circle cx="24" cy="30" r="5" fill="var(--bg)" />
+      <circle cx="40" cy="30" r="5" fill="var(--bg)" />
       <path
         d="M22 42c3.2 2.7 6.5 4 10 4s6.8-1.3 10-4"
-        stroke="rgba(11, 18, 32, 0.85)"
+        stroke="var(--bg)"
         strokeWidth="4"
         strokeLinecap="round"
       />
       <path
         d="M32 14V7"
-        stroke="rgba(255, 255, 255, 0.55)"
+        stroke="currentColor"
+        strokeOpacity="0.55"
         strokeWidth="3"
         strokeLinecap="round"
       />
-      <circle cx="32" cy="6" r="3" fill="rgba(255, 255, 255, 0.50)" />
+      <circle cx="32" cy="6" r="3" fill="currentColor" fillOpacity="0.50" />
     </svg>
   )
 }
@@ -410,8 +411,8 @@ function BulbIcon() {
     <svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
       <defs>
         <linearGradient id="gBulb" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="rgba(255, 255, 255, 0.90)" />
-          <stop offset="1" stopColor="rgba(255, 255, 255, 0.66)" />
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.90" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0.66" />
         </linearGradient>
       </defs>
       <path
@@ -419,8 +420,8 @@ function BulbIcon() {
         fill="url(#gBulb)"
         opacity="0.95"
       />
-      <path d="M24 52h16" stroke="rgba(255, 255, 255, 0.55)" strokeWidth="4" strokeLinecap="round" />
-      <path d="M26 58h12" stroke="rgba(255, 255, 255, 0.40)" strokeWidth="4" strokeLinecap="round" />
+      <path d="M24 52h16" stroke="currentColor" strokeOpacity="0.55" strokeWidth="4" strokeLinecap="round" />
+      <path d="M26 58h12" stroke="currentColor" strokeOpacity="0.40" strokeWidth="4" strokeLinecap="round" />
     </svg>
   )
 }
@@ -430,17 +431,18 @@ function ChipIcon() {
     <svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
       <defs>
         <linearGradient id="gChip" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="rgba(255, 255, 255, 0.88)" />
-          <stop offset="1" stopColor="rgba(255, 255, 255, 0.62)" />
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.88" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0.62" />
         </linearGradient>
       </defs>
       <rect x="16" y="16" width="32" height="32" rx="8" fill="url(#gChip)" opacity="0.95" />
-      <rect x="24" y="24" width="16" height="16" rx="4" fill="rgba(11, 18, 32, 0.70)" />
+      <rect x="24" y="24" width="16" height="16" rx="4" fill="var(--bg)" />
       {Array.from({ length: 6 }).map((_, i) => (
         <path
           key={i}
           d={`M${10 + i * 7} 12v6M${10 + i * 7} 46v6`}
-          stroke="rgba(255, 255, 255, 0.45)"
+          stroke="currentColor"
+          strokeOpacity="0.45"
           strokeWidth="2"
           strokeLinecap="round"
         />
