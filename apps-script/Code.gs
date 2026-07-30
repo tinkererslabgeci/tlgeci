@@ -223,8 +223,9 @@
           dashUrl + '\n\n' +
           'Best regards,\nTinkerers Lab GECI System';
 
+        const recipientTo = Array.isArray(adminEmails) ? adminEmails.join(',') : String(adminEmails || 'tinkererslabgeci@gecidukki.ac.in').trim();
         MailApp.sendEmail({
-          to: adminEmails,
+          to: recipientTo,
           subject: '[ACTION REQUIRED] New Slot Booking Request - ' + normalized.name + ' (' + slotD + ')',
           body: adminMsg,
         });
@@ -234,13 +235,6 @@
     }
 
     return out;
-  }
-
-  function getAdminEmails_() {
-    const props = PropertiesService.getScriptProperties();
-    const emails = String(props.getProperty('ADMIN_EMAILS') || '').trim();
-    if (emails) return emails;
-    return 'tinkererslabgeci@gecidukki.ac.in';
   }
 
   function normalizeBooking_(b) {
@@ -2222,15 +2216,16 @@
 
   function getAdminEmails_() {
     const prop = PropertiesService.getScriptProperties().getProperty('ADMIN_EMAILS');
-    if (prop) {
-      return prop.split(',').map(function(e) { return e.trim(); }).filter(Boolean);
+    if (prop && String(prop).trim()) {
+      const list = String(prop).split(',').map(function(e) { return e.trim(); }).filter(Boolean);
+      if (list.length > 0) return list.join(', ');
     }
-    return ['tinkererslabgeci@gecidukki.ac.in'];
+    return 'tinkererslabgeci@gecidukki.ac.in';
   }
 
   function getAdminDashboardUrl_() {
     const prop = PropertiesService.getScriptProperties().getProperty('ADMIN_DASHBOARD_URL');
-    return String(prop || 'https://tlgeci.vercel.app/admin').trim();
+    return String(prop || 'https://tl.gecidukki.ac.in/admin').trim();
   }
 
   /**
@@ -2267,7 +2262,7 @@
                    'Best regards,\nTinkerers Lab GECI System';
 
       MailApp.sendEmail({
-        to:      adminEmails.join(','),
+        to:      adminEmails,
         subject: '[ACTION REQUIRED] New Slot Booking Request - ' + name + ' (' + date + ')',
         body:    body
       });
