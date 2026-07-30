@@ -26,6 +26,23 @@ export default function AdminDashboard() {
   const [labStatus, setLabStatus] = useState('OPEN');
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     const fetchLabStatus = async () => {
@@ -33,7 +50,7 @@ export default function AdminDashboard() {
         const res = await fetch(`${APPS_SCRIPT_WEB_APP_URL}?action=getLabStatus`);
         const data = await res.json();
         if (data && data.ok) setLabStatus(data.status);
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchLabStatus();
   }, [isAuthenticated]);
@@ -241,13 +258,13 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.2rem', backgroundColor: 'var(--field-bg)', borderRadius: '12px', border: '1px solid var(--border-strong)', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>Live Website Light Indicator:</span>
+              <span>Lab open indicator:</span>
               <span style={{ color: labStatus === 'OPEN' ? '#d97706' : 'var(--muted)', fontWeight: '800' }}>
                 {labStatus === 'OPEN' ? '⚡ LIGHT IS ON (OPEN)' : '○ LIGHT IS OFF (CLOSED)'}
               </span>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-              Toggling this ON/OFF updates the glowing light indicator live across all devices worldwide.
+              Toggling this ON/OFF update if the lab is opened or not.
             </div>
           </div>
           <button
