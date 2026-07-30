@@ -7,9 +7,9 @@ export const allEvents = [
     time: '4:30 PM – 6:30 PM',
     venue: 'Tinkerers\' Lab, GECI',
     description:
-      '“Don’t Just Learn. Tinker.” Learn • Explore • Create. Get hands-on experience at Tinkerers\' Lab GECI through an interactive training session designed to help you explore and experiment with lab facilities.',
+      '“Don’t Just Learn. Tinker.” Learn • Explore • Create. Get hands-on experience at Tinkerers\' Lab GECI through an interactive training session designed to help you explore and experiment 3D printer and Laser cutter.',
     fullDescription:
-      '“Don’t Just Learn. Tinker.”\n\n⚡ TRAINING SESSION ⚡\nLearn • Explore • Create\n\nGet hands-on experience at the Tinkerers\' Lab GECI through an interactive training session designed to help you explore, learn, and experiment with the available facilities.\n\n📅 Date: August 3 to 7\n🕟 Time: 4:30 PM – 6:30 PM\n📍 Venue: Tinkerers\' Lab, GECI\n\nWHAT YOU GET:\n✨ Hands-on learning experience\n🔧 Full access to Tinkerers\' Lab\n🎓 Certificate of Participation\n\nREGISTER NOW - Limited slots available! (First Come, First Serve)\n\n💰 Registration Fee: ₹80\n\n📞 For any queries, contact:\nK S Mohammad Ihsaan: +91 97449 07092\nPranay K Pradeep: +91 80784 79399',
+      '“Don’t Just Learn. Tinker.”\n\n⚡ TRAINING SESSION ⚡\nLearn • Explore • Create\n\nGet hands-on experience at the Tinkerers\' Lab GECI through an interactive training session on 3D printer and Laser cutting , designed to help you explore, learn, and experiment with the available facilities.\n\n📅 Date: August 3 to 7\n🕟 Time: 4:30 PM – 6:30 PM\n📍 Venue: Tinkerers\' Lab, GECI\n\nWHAT YOU GET:\n✨ Hands-on learning experience\n🔧 Full access to Tinkerers\' Lab\n🎓 Certificate of Participation\n\nREGISTER NOW - Limited slots available! (First Come, First Serve)\n\n💰 Registration Fee: ₹80\n\n📞 For any queries, contact:\nK S Mohammad Ihsaan: +91 97449 07092\nPranay K Pradeep: +91 80784 79399',
     registrationUrl: 'https://forms.gle/NegcBsSx8MEREP8W8',
     posterSrc: '/posters/events/training.png',
     posterAlt: 'Training Session poster',
