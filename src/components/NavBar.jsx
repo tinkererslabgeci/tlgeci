@@ -180,6 +180,9 @@ export default function NavBar({ deferMs = 0 }) {
             <NavLink to="/booking" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
               Slot Booking
             </NavLink>
+            <NavLink to="/admin" style={linkStyle} onClick={() => setIsMenuOpen(false)}>
+              Admin
+            </NavLink>
           </nav>
         </div>
       </div>

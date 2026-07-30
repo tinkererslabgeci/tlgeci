@@ -208,6 +208,7 @@
         const slotD = normalized.date;
         const tf = formatTime12h_(normalized.timeFrom);
         const tt = formatTime12h_(normalized.timeTo);
+        const dashUrl = getAdminDashboardUrl_();
         const adminMsg = 'New Slot Booking Request Pending Approval:\n\n' +
           'Name: ' + normalized.name + '\n' +
           'KTU ID: ' + normalized.ktuId + '\n' +
@@ -218,11 +219,13 @@
           'Time: ' + tf + ' - ' + tt + '\n' +
           'Purpose: ' + normalized.purpose + '\n' +
           'Equipments: ' + normalized.totalText + '\n\n' +
-          'Please log in to the Admin Dashboard to approve or reject this request.';
+          'Click the link below to open the Admin Dashboard and Approve or Reject this request:\n' +
+          dashUrl + '\n\n' +
+          'Best regards,\nTinkerers Lab GECI System';
 
         MailApp.sendEmail({
           to: adminEmails,
-          subject: 'New Slot Booking Request - ' + normalized.name,
+          subject: '[ACTION REQUIRED] New Slot Booking Request - ' + normalized.name + ' (' + slotD + ')',
           body: adminMsg,
         });
       }
@@ -2214,5 +2217,61 @@
       });
     } catch (err) {
       Logger.log('sendCancellationEmail_ error: ' + err);
+    }
+  }
+
+  function getAdminEmails_() {
+    const prop = PropertiesService.getScriptProperties().getProperty('ADMIN_EMAILS');
+    if (prop) {
+      return prop.split(',').map(function(e) { return e.trim(); }).filter(Boolean);
+    }
+    return ['tinkererslabgeci@gecidukki.ac.in'];
+  }
+
+  function getAdminDashboardUrl_() {
+    const prop = PropertiesService.getScriptProperties().getProperty('ADMIN_DASHBOARD_URL');
+    return String(prop || 'https://tlgeci.vercel.app/admin').trim();
+  }
+
+  /**
+   * Sends an admin notification email containing a direct link to the Admin Dashboard.
+   */
+  function notifyAdminNewBooking_(rowData, headers) {
+    try {
+      const adminEmails = getAdminEmails_();
+      const dashUrl    = getAdminDashboardUrl_();
+      if (!adminEmails || adminEmails.length === 0) return;
+
+      const idxName  = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
+      const idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+      const idxDate  = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
+      const idxFrom  = findColumnIndexByCandidates_(headers, ['TimeFrom', 'Time slot - From'], -1);
+      const idxTo    = findColumnIndexByCandidates_(headers, ['TimeTo', 'Time slot - TO'], -1);
+      const idxEquip = findColumnIndexByCandidates_(headers, ['TotalText', 'TOTAL ..', 'TOTAL'], -1);
+
+      const name  = idxName >= 0  ? String(rowData[idxName]  || '').trim() : 'Student';
+      const email = idxEmail >= 0 ? String(rowData[idxEmail] || '').trim() : '';
+      const date  = idxDate >= 0  ? normalizeDateValue_(rowData[idxDate]) : '';
+      const tf    = idxFrom >= 0  ? normalizeTimeValue_(rowData[idxFrom]) : '';
+      const tt    = idxTo >= 0    ? normalizeTimeValue_(rowData[idxTo]) : '';
+      const equip = idxEquip >= 0 ? String(rowData[idxEquip] || '').trim() : '';
+
+      const body = 'Hello Admin,\n\n' +
+                   'A new slot booking request has been submitted on the Tinkerers Lab portal.\n\n' +
+                   'Student Name: ' + name + '\n' +
+                   'Email: ' + email + '\n' +
+                   'Date: ' + date + ' (' + tf + ' - ' + tt + ')\n' +
+                   'Equipments: ' + equip + '\n\n' +
+                   'Review & Manage this request on the Admin Dashboard:\n' +
+                   dashUrl + '\n\n' +
+                   'Best regards,\nTinkerers Lab GECI System';
+
+      MailApp.sendEmail({
+        to:      adminEmails.join(','),
+        subject: '[ACTION REQUIRED] New Slot Booking Request - ' + name + ' (' + date + ')',
+        body:    body
+      });
+    } catch (err) {
+      Logger.log('notifyAdminNewBooking_ error: ' + err);
     }
   }
