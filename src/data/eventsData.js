@@ -1,5 +1,21 @@
 export const allEvents = [
   {
+    title: 'Training Session',
+    dateLabel: 'August 3 – 7, 2026',
+    startDate: '2026-08-03',
+    endDate: '2026-08-07',
+    time: '4:30 PM – 6:30 PM',
+    venue: 'Tinkerers\' Lab, GECI',
+    description:
+      '“Don’t Just Learn. Tinker.” Learn • Explore • Create. Get hands-on experience at Tinkerers\' Lab GECI through an interactive training session designed to help you explore and experiment with lab facilities.',
+    fullDescription:
+      '“Don’t Just Learn. Tinker.”\n\n⚡ TRAINING SESSION ⚡\nLearn • Explore • Create\n\nGet hands-on experience at the Tinkerers\' Lab GECI through an interactive training session designed to help you explore, learn, and experiment with the available facilities.\n\n📅 Date: August 3 to 7\n🕟 Time: 4:30 PM – 6:30 PM\n📍 Venue: Tinkerers\' Lab, GECI\n\nWHAT YOU GET:\n✨ Hands-on learning experience\n🔧 Full access to Tinkerers\' Lab\n🎓 Certificate of Participation\n\nREGISTER NOW - Limited slots available! (First Come, First Serve)\n\n💰 Registration Fee: ₹80\n\n📞 For any queries, contact:\nK S Mohammad Ihsaan: +91 97449 07092\nPranay K Pradeep: +91 80784 79399',
+    registrationUrl: 'https://forms.gle/NegcBsSx8MEREP8W8',
+    posterSrc: '/posters/events/training.png',
+    posterAlt: 'Training Session poster',
+    slug: 'training-session',
+  },
+  {
     title: 'Logo designing competition',
     dateLabel: '2026-01-10',
     startDate: '2026-01-10',
@@ -26,7 +42,7 @@ export const allEvents = [
       'Official inauguration of the Tinkerers\' Lab - join us for the opening and a quick showcase of tools and ongoing projects.',
     fullDescription:
       '"Innovation distinguishes between a leader and a follower." - Steve Jobs\n\nWe are delighted to invite you to the Inauguration of the Tinkerers\' Lab at Government Engineering College Idukki on 23rd March 2026 at 10:00 AM in the Seminar Hall, Administrative Block, GEC Idukki.\n\nThe Tinkerers\' Lab, established with the support of the Maker Bhavan Foundation is envisioned as a hub where ideas transform into practical solutions through teamwork and technical exploration.\n\nThe Lab will be inaugurated by Dr. Jayaprakash P., Director of Technical Education, marking an important milestone in strengthening the innovation ecosystem of our institution.\n\nWe warmly welcome all faculty members, technical and non-technical staff, students and well-wishers to be part of this special occasion.\n\nLet us come together to celebrate the spirit of innovation and the beginning of a new maker culture at GEC Idukki.',
-    
+
     posterSrc: '/posters/events/inauguration.jpeg',
     posterAlt: 'Lab inauguration poster',
     slug: 'lab-inauguration',
@@ -56,8 +72,8 @@ export const allEvents = [
     venue: 'Tinkerers Lab, GECI',
     description:
       'Join us for the official reveal of the TL GECI logo, designed by our talented students. Celebrate our new identity and vision for innovation!',
-      fullDescription:
-        '"The best way to predict the future is to invent it."\n\nWe are delighted to invite you to the Logo Revealing Ceremony of the Tinkerers\' Lab, GEC Idukki, an initiative sponsored by the Maker Bhavan Foundation.\n\nTinkerers\' Lab is envisioned as a creative space where students explore ideas, experiment with technologies, and innovate solutions through hands-on learning. The unveiling of our logo marks a milestone in building a vibrant innovation ecosystem within our campus.\n\nDate: 10 March 2026\nTime: 12:30 PM\nVenue: Administrative Block, Ground Floor (Near Visitors\' Lounge)\n\nWe warmly welcome all students, faculty members, and well-wishers to join us in celebrating the beginning of a new chapter of innovation, creativity, and collaborative learning.',
+    fullDescription:
+      '"The best way to predict the future is to invent it."\n\nWe are delighted to invite you to the Logo Revealing Ceremony of the Tinkerers\' Lab, GEC Idukki, an initiative sponsored by the Maker Bhavan Foundation.\n\nTinkerers\' Lab is envisioned as a creative space where students explore ideas, experiment with technologies, and innovate solutions through hands-on learning. The unveiling of our logo marks a milestone in building a vibrant innovation ecosystem within our campus.\n\nDate: 10 March 2026\nTime: 12:30 PM\nVenue: Administrative Block, Ground Floor (Near Visitors\' Lounge)\n\nWe warmly welcome all students, faculty members, and well-wishers to join us in celebrating the beginning of a new chapter of innovation, creativity, and collaborative learning.',
     registrationUrl: '',
     posterSrc: '/posters/events/logoreveal.jpeg',
     posterAlt: 'Logo reveal poster',
@@ -127,7 +143,7 @@ export const allEvents = [
   {
     title: 'Execom Call',
     dateLabel: '2026-07-01',
-    startDate: '2026-07-01',  
+    startDate: '2026-07-01',
     endDate: '2026-07-07',
     venue: 'Tinkerers Lab, GECI',
     description:
