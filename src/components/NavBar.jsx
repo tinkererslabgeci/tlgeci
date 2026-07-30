@@ -16,7 +16,7 @@ export default function NavBar({ deferMs = 0 }) {
   const [hiddenOnScroll, setHiddenOnScroll] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'dark'
+    return localStorage.getItem('theme') || 'light'
   })
 
   useEffect(() => {

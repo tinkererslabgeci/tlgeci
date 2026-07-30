@@ -38,8 +38,8 @@ export default function AdminDashboard() {
   };
 
   // Open modal handler with fresh CAPTCHA code
-  const openActionModal = (type, bookingId) => {
-    setActionModal({ type, bookingId });
+  const openActionModal = (type, bookingId, isAdvanced = false) => {
+    setActionModal({ type, bookingId, isAdvanced });
     generateCaptcha();
     setOpenMenuId(null);
   };
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
       alert("Please enter a reason for this action");
       return;
     }
-    if (captchaInput.trim() !== captchaCode) {
+    if (actionModal?.isAdvanced && captchaInput.trim() !== captchaCode) {
       alert(`Security CAPTCHA verification failed!\nPlease enter the exact 4-digit code shown (${captchaCode}).`);
       return;
     }
@@ -294,12 +294,12 @@ export default function AdminDashboard() {
                           {isPending && (
                             <>
                               <button
-                                onClick={() => openActionModal('APPROVE', b.id)}
+                                onClick={() => openActionModal('APPROVE', b.id, false)}
                                 style={{ padding: '0.4rem 0.8rem', background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', border: '1px solid #22c55e', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}>
                                 Approve
                               </button>
                               <button
-                                onClick={() => openActionModal('REJECT', b.id)}
+                                onClick={() => openActionModal('REJECT', b.id, false)}
                                 style={{ padding: '0.4rem 0.8rem', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', border: '1px solid #ef4444', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}>
                                 Reject
                               </button>
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                                 >
                                   {isApproved && (
                                     <button
-                                      onClick={() => openActionModal('CANCEL', b.id)}
+                                      onClick={() => openActionModal('CANCEL', b.id, true)}
                                       style={{
                                         width: '100%',
                                         padding: '0.8rem 1rem',
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
 
                                   {(isRejected || isCancelled) && (
                                     <button
-                                      onClick={() => openActionModal('APPROVE', b.id)}
+                                      onClick={() => openActionModal('APPROVE', b.id, true)}
                                       style={{
                                         width: '100%',
                                         padding: '0.8rem 1rem',
@@ -450,28 +450,28 @@ export default function AdminDashboard() {
                   className="input"
                   style={{
                     width: '100%',
-                    backgroundColor: 'var(--field-bg)',
+                    backgroundColor: 'var(--modal-bg-mix, #ffffff)',
                     color: 'var(--text)',
                     border: '1px solid var(--border-strong)'
                   }}
                   value={adminName}
                   onChange={e => setAdminName(e.target.value)}
-                  placeholder="Enter your full name"
+                  placeholder="Enter your admin name"
                   required
+                  autoFocus
                 />
               </div>
 
               {(actionModal.type === 'REJECT' || actionModal.type === 'CANCEL') && (
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.95rem', color: 'var(--text, #0f172a)' }}>
-                    {actionModal.type === 'CANCEL' ? 'Reason for Cancellation (Apology email sent to student)' : 'Reason for Rejection'} <span style={{ color: '#ef4444' }}>*</span>
+                    {actionModal.type === 'CANCEL' ? 'Reason for Cancellation' : 'Reason for Rejection'} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <textarea
                     className="input"
                     style={{
                       width: '100%',
-                      resize: 'vertical',
-                      backgroundColor: 'var(--field-bg)',
+                      backgroundColor: 'var(--modal-bg-mix, #ffffff)',
                       color: 'var(--text)',
                       border: '1px solid var(--border-strong)'
                     }}
@@ -484,56 +484,58 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Security CAPTCHA Verification */}
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--field-bg)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-strong)'
-              }}>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '700', fontSize: '0.9rem', color: 'var(--text, #0f172a)' }}>
-                  Security Verification (CAPTCHA) <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.6rem' }}>
-                  <div style={{
-                    padding: '0.4rem 0.9rem',
-                    background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
-                    color: '#ffffff',
-                    fontFamily: 'monospace',
-                    fontSize: '1.25rem',
-                    fontWeight: '800',
-                    letterSpacing: '4px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
-                    userSelect: 'none'
-                  }}>
-                    {captchaCode}
+              {/* Security CAPTCHA Verification (Required only for Advanced options) */}
+              {actionModal.isAdvanced && (
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--field-bg)',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-strong)'
+                }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '700', fontSize: '0.9rem', color: 'var(--text, #0f172a)' }}>
+                    Security Verification (CAPTCHA) <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.6rem' }}>
+                    <div style={{
+                      padding: '0.4rem 0.9rem',
+                      background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+                      color: '#ffffff',
+                      fontFamily: 'monospace',
+                      fontSize: '1.25rem',
+                      fontWeight: '800',
+                      letterSpacing: '4px',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                      userSelect: 'none'
+                    }}>
+                      {captchaCode}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={generateCaptcha}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: '0.82rem', fontWeight: '600' }}
+                    >
+                      ↻ Refresh Code
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={generateCaptcha}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: '0.82rem', fontWeight: '600' }}
-                  >
-                    ↻ Refresh Code
-                  </button>
+                  <input
+                    type="text"
+                    className="input"
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'var(--modal-bg-mix, #ffffff)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border-strong)',
+                      fontWeight: '600',
+                      letterSpacing: '1px'
+                    }}
+                    value={captchaInput}
+                    onChange={e => setCaptchaInput(e.target.value)}
+                    placeholder="Enter security code"
+                    required
+                  />
                 </div>
-                <input
-                  type="text"
-                  className="input"
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--modal-bg-mix, #ffffff)',
-                    color: 'var(--text)',
-                    border: '1px solid var(--border-strong)',
-                    fontWeight: '600',
-                    letterSpacing: '1px'
-                  }}
-                  value={captchaInput}
-                  onChange={e => setCaptchaInput(e.target.value)}
-                  placeholder="Enter security code"
-                  required
-                />
-              </div>
+              )}
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                 <button
