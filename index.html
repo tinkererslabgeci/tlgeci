@@ -21,6 +21,29 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if (window.location.pathname.startsWith('/admin')) {
+      const manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      manifest.href = '/admin-manifest.json';
+      document.head.appendChild(manifest);
+
+      const appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      appleIcon.href = '/logo/logo.jpeg';
+      document.head.appendChild(appleIcon);
+
+      const appleMobileWeb = document.createElement('meta');
+      appleMobileWeb.name = 'apple-mobile-web-app-capable';
+      appleMobileWeb.content = 'yes';
+      document.head.appendChild(appleMobileWeb);
+
+      const appleStatus = document.createElement('meta');
+      appleStatus.name = 'apple-mobile-web-app-status-bar-style';
+      appleStatus.content = 'black-translucent';
+      document.head.appendChild(appleStatus);
+    }
+  </script>
 </body>
 
 </html>

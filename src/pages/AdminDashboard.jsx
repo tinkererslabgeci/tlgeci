@@ -23,6 +23,41 @@ export default function AdminDashboard() {
   const [captchaCode, setCaptchaCode] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
 
+  const [labStatus, setLabStatus] = useState('OPEN');
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchLabStatus = async () => {
+      try {
+        const res = await fetch(`${APPS_SCRIPT_WEB_APP_URL}?action=getLabStatus`);
+        const data = await res.json();
+        if (data && data.ok) setLabStatus(data.status);
+      } catch (e) {}
+    };
+    fetchLabStatus();
+  }, [isAuthenticated]);
+
+  const toggleLabStatus = async () => {
+    const nextStatus = labStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+    setIsTogglingStatus(true);
+    try {
+      const res = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ setLabStatus: true, status: nextStatus }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        setLabStatus(nextStatus);
+      }
+    } catch (e) {
+      alert('Failed to update lab status');
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleOutsideClick = () => setOpenMenuId(null);
@@ -202,6 +237,39 @@ export default function AdminDashboard() {
       </header>
 
       <section className="card" style={{ padding: '1.4rem' }}>
+        {/* Live Lab Status Light Control Card */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.2rem', backgroundColor: 'var(--field-bg)', borderRadius: '12px', border: '1px solid var(--border-strong)', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>Live Website Light Indicator:</span>
+              <span style={{ color: labStatus === 'OPEN' ? '#d97706' : 'var(--muted)', fontWeight: '800' }}>
+                {labStatus === 'OPEN' ? '⚡ LIGHT IS ON (OPEN)' : '○ LIGHT IS OFF (CLOSED)'}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+              Toggling this ON/OFF updates the glowing light indicator live across all devices worldwide.
+            </div>
+          </div>
+          <button
+            onClick={toggleLabStatus}
+            disabled={isTogglingStatus}
+            style={{
+              padding: '0.65rem 1.4rem',
+              borderRadius: '24px',
+              border: 'none',
+              fontWeight: '800',
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              background: labStatus === 'OPEN' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#475569',
+              color: '#ffffff',
+              boxShadow: labStatus === 'OPEN' ? '0 0 16px rgba(245, 158, 11, 0.6)' : 'none',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {isTogglingStatus ? 'Updating...' : labStatus === 'OPEN' ? 'Turn Light OFF (Mark Closed)' : 'Turn Light ON (Mark Open)'}
+          </button>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <select className="input" style={{ width: 'auto' }} value={filter} onChange={e => setFilter(e.target.value)}>

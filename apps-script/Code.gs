@@ -52,6 +52,10 @@
     try {
       const action = (e && e.parameter && e.parameter.action) || 'inventory';
       if (action === 'inventory') return jsonOut_(handleInventory_());
+      if (action === 'getLabStatus') {
+        const prop = PropertiesService.getScriptProperties().getProperty('LAB_STATUS');
+        return jsonOut_({ ok: true, status: prop || 'OPEN' });
+      }
       // ── NEW: Admin Dashboard ──────────────────────────────────────────────
       if (action === 'getAll') return jsonOut_(handleGetAllBookings_());
       // ─────────────────────────────────────────────────────────────────────
@@ -68,6 +72,12 @@
         payload = parsePayload_(e);
       } catch (err) {
         return jsonOut_({ ok: false, error: 'Invalid payload', detail: String(err) });
+      }
+
+      if (payload && (payload.setLabStatus === true || payload.action === 'setLabStatus')) {
+        const newStatus = payload.status === 'CLOSED' ? 'CLOSED' : 'OPEN';
+        PropertiesService.getScriptProperties().setProperty('LAB_STATUS', newStatus);
+        return jsonOut_({ ok: true, status: newStatus });
       }
 
       // Check admin action FIRST before defaulting to checkAndBook

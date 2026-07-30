@@ -2256,3 +2256,83 @@ textarea.footerContactInput {
   transition: none !important;
 }
 
+/* ==========================================================================
+   Single Combined Box Warm Light Glow & Filament Flicker (Lab Open Indicator)
+   ========================================================================== */
+.brandLightContainer.isLabOpen {
+  background: rgba(251, 191, 36, 0.04);
+  box-shadow: 
+    0 0 16px rgba(245, 158, 11, 0.75),
+    0 0 32px rgba(251, 191, 36, 0.45),
+    inset 0 0 14px rgba(245, 158, 11, 0.25);
+  border-color: rgba(245, 158, 11, 0.9) !important;
+  animation: singleBoxFilamentFlicker 3.2s infinite ease-in-out;
+}
+
+@keyframes singleBoxFilamentFlicker {
+  0% {
+    box-shadow: 
+      0 0 12px rgba(245, 158, 11, 0.6),
+      0 0 24px rgba(251, 191, 36, 0.35),
+      inset 0 0 10px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.75) !important;
+  }
+  18% {
+    box-shadow: 
+      0 0 18px rgba(245, 158, 11, 0.9),
+      0 0 36px rgba(251, 191, 36, 0.6),
+      inset 0 0 16px rgba(245, 158, 11, 0.35);
+    border-color: rgba(251, 191, 36, 1) !important;
+  }
+  24% {
+    box-shadow: 
+      0 0 9px rgba(245, 158, 11, 0.45),
+      0 0 18px rgba(251, 191, 36, 0.25),
+      inset 0 0 7px rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.65) !important;
+  }
+  27% {
+    box-shadow: 
+      0 0 20px rgba(245, 158, 11, 0.95),
+      0 0 40px rgba(251, 191, 36, 0.65),
+      inset 0 0 18px rgba(245, 158, 11, 0.38);
+    border-color: rgba(251, 191, 36, 1) !important;
+  }
+  60% {
+    box-shadow: 
+      0 0 14px rgba(245, 158, 11, 0.65),
+      0 0 28px rgba(251, 191, 36, 0.4),
+      inset 0 0 12px rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.8) !important;
+  }
+  88% {
+    box-shadow: 
+      0 0 16px rgba(245, 158, 11, 0.8),
+      0 0 32px rgba(251, 191, 36, 0.5),
+      inset 0 0 14px rgba(245, 158, 11, 0.3);
+    border-color: rgba(245, 158, 11, 0.9) !important;
+  }
+  100% {
+    box-shadow: 
+      0 0 12px rgba(245, 158, 11, 0.6),
+      0 0 24px rgba(251, 191, 36, 0.35),
+      inset 0 0 10px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.75) !important;
+  }
+}
+
+.warmStatusBeacon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #b45309;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 20px;
+  line-height: 1;
+}
+

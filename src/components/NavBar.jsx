@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { APPS_SCRIPT_WEB_APP_URL } from '../pages/SlotBookingPage.jsx'
 
 const linkStyle = ({ isActive }) => ({
   textDecoration: 'none',
@@ -92,6 +93,51 @@ export default function NavBar({ deferMs = 0 }) {
   const headerTransform = !visible ? 'translateY(-10px)' : hideHeader ? 'translateY(-110%)' : 'translateY(0)'
   const headerPointerEvents = visible && !hideHeader ? 'auto' : 'none'
 
+  const [isLabOpen, setIsLabOpen] = useState(true)
+
+  useEffect(() => {
+    let lastFetchedTime = 0
+    const CACHE_TTL = 60000 // 60s cache guard
+
+    const fetchStatus = async (force = false) => {
+      const now = Date.now()
+      // Skip if tab is hidden or fetched within cache window
+      if (!force && (document.visibilityState === 'hidden' || now - lastFetchedTime < CACHE_TTL)) {
+        return
+      }
+
+      try {
+        const res = await fetch(`${APPS_SCRIPT_WEB_APP_URL}?action=getLabStatus`)
+        const data = await res.json()
+        if (data && data.ok) {
+          setIsLabOpen(data.status === 'OPEN')
+          lastFetchedTime = Date.now()
+        }
+      } catch (err) {
+        // Fallback gracefully
+      }
+    }
+
+    // Initial fetch on page load
+    fetchStatus(true)
+
+    // Fetch immediately when user switches back to this tab
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStatus(false)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    // Gentle 2-minute interval (only fires if tab is active)
+    const interval = setInterval(() => fetchStatus(false), 120000)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      clearInterval(interval)
+    }
+  }, [])
+
   return (
     <header
       style={{
@@ -108,29 +154,48 @@ export default function NavBar({ deferMs = 0 }) {
       }}
     >
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.9rem 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+        <div
+          className={`brandLightContainer ${isLabOpen ? 'isLabOpen' : ''}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.85rem',
+            padding: '0.4rem 0.85rem 0.4rem 0.45rem',
+            borderRadius: 14,
+            border: isLabOpen ? '1px solid rgba(245, 158, 11, 0.85)' : '1px solid var(--border-strong)',
+            transition: 'all 0.3s ease',
+            cursor: 'pointer',
+          }}
+          title={isLabOpen ? "Tinkerers' Lab is OPEN NOW" : "Tinkerers' Lab is CLOSED"}
+        >
           <div
             style={{
-                width: 62,
-                height: 62,
-              borderRadius: 10,
+              width: 52,
+              height: 52,
+              borderRadius: 8,
               background: 'transparent',
               display: 'grid',
               placeItems: 'center',
-              border: '1px solid var(--border-strong)',
               flexShrink: 0,
             }}
           >
             <img
               src={theme === 'dark' ? '/logo/tlgeci-logowhite.png' : '/logo/tlgeci-logoblack.png'}
               alt="TL GECI logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.2)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transform: 'scale(1.15)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}
             />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-            <span style={{ fontWeight: 700 }}>Tinkerers' Lab</span>
-            <span style={{ color: 'var(--muted)', fontSize: '0.92rem' }}>GECI</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.02rem' }}>Tinkerers' Lab</span>
+              {isLabOpen && (
+                <span className="warmStatusBeacon" title="Tinkerers' Lab is currently OPEN">
+                  OPEN
+                </span>
+              )}
+            </div>
+            <span style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>GECI</span>
           </div>
         </div>
 
