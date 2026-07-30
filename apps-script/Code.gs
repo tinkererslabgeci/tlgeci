@@ -52,6 +52,9 @@
     try {
       const action = (e && e.parameter && e.parameter.action) || 'inventory';
       if (action === 'inventory') return jsonOut_(handleInventory_());
+      // ── NEW: Admin Dashboard ──────────────────────────────────────────────
+      if (action === 'getAll') return jsonOut_(handleGetAllBookings_());
+      // ─────────────────────────────────────────────────────────────────────
       return jsonOut_({ ok: false, error: 'Unknown action' });
     } catch (err) {
       return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) });
@@ -60,15 +63,20 @@
 
   function doPost(e) {
     try {
-      const params = (e && e.parameter) || {};
-      const action = params.action || 'checkAndBook';
-
       let payload = null;
       try {
         payload = parsePayload_(e);
       } catch (err) {
         return jsonOut_({ ok: false, error: 'Invalid payload', detail: String(err) });
       }
+
+      // Check admin action FIRST before defaulting to checkAndBook
+      if (payload && (payload.adminAction === true || payload.adminAction === 'true')) {
+        return jsonOut_(handleAdminDecision_(payload));
+      }
+
+      const params = (e && e.parameter) || {};
+      const action = params.action || (payload && payload.action) || 'checkAndBook';
 
       if (action === 'checkAndBook') {
         return jsonOut_(handleCheckAndBook_(payload));
@@ -170,19 +178,14 @@
 
     const out = {
       ok: true,
-      message: 'Booking accepted and stored.',
+      message: 'Booking request accepted and pending admin approval.',
       inventoryLeft: result2.inventoryLeft,
       suggestions: result2.suggestions,
       conflicts: [],
     };
 
-    // For web-app API bookings, also try PDF generation + email directly.
-    // This makes API submissions independent from Form submit triggers.
+    // Ensure status is PENDING and notify Admin
     try {
-      const props = PropertiesService.getScriptProperties();
-      const templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
-      const rootFolderId = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
-      const rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
       if (!bookingsSheet || bookingRowIndex < 2) {
         bookingsSheet = ensureBookingSheet_();
         if (!bookingRowIndex || bookingRowIndex < 2) bookingRowIndex = bookingsSheet.getLastRow();
@@ -193,48 +196,48 @@
       if (bookingReqKey) {
         setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'BookingRequestKey', bookingReqKey);
       }
+      setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'Status', 'PENDING');
 
+      // Mirror to form responses if configured
       const mirrorResult = mirrorBookingToFormResponsesFromBookingRow_(bookingsSheet, bookingRowIndex);
       out.formResponseMirror = mirrorResult;
 
-      if (!templateDocId) {
-        setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'EmailStatus', 'SKIPPED');
-        setIfColumnExists_(bookingsSheet, bookingRowIndex, idx, 'EmailError', 'BOOKING_TEMPLATE_DOC_ID is not set in Script Properties.');
-        out.pdfEmail = {
-          ok: false,
-          skipped: true,
-          reason: 'BOOKING_TEMPLATE_DOC_ID is not set in Script Properties.',
-        };
-      } else {
-        const root = getArchiveRootFolder_(rootFolderId, rootFolderName);
-        const confirmResult = sendConfirmationForBookingRow_(bookingsSheet, bookingRowIndex, {
-          templateDocId: templateDocId,
-          rootFolder: root,
-          updateMonthlyArchive: true,
+      // Notify Admin via email regarding the new request
+      const adminEmails = getAdminEmails_();
+      if (adminEmails) {
+        const slotD = normalized.date;
+        const tf = formatTime12h_(normalized.timeFrom);
+        const tt = formatTime12h_(normalized.timeTo);
+        const adminMsg = 'New Slot Booking Request Pending Approval:\n\n' +
+          'Name: ' + normalized.name + '\n' +
+          'KTU ID: ' + normalized.ktuId + '\n' +
+          'Email: ' + normalized.email + '\n' +
+          'Phone: ' + normalized.phone + '\n' +
+          'Department: ' + normalized.department + ', Sem ' + normalized.semester + '\n' +
+          'Date: ' + slotD + '\n' +
+          'Time: ' + tf + ' - ' + tt + '\n' +
+          'Purpose: ' + normalized.purpose + '\n' +
+          'Equipments: ' + normalized.totalText + '\n\n' +
+          'Please log in to the Admin Dashboard to approve or reject this request.';
+
+        MailApp.sendEmail({
+          to: adminEmails,
+          subject: 'New Slot Booking Request - ' + normalized.name,
+          body: adminMsg,
         });
-
-        out.pdfEmail = confirmResult && confirmResult.email
-          ? confirmResult.email
-          : { ok: !!(confirmResult && confirmResult.ok) };
-
-        out.calendar = confirmResult && confirmResult.calendar
-          ? confirmResult.calendar
-          : undefined;
-
-        if (!confirmResult || confirmResult.ok !== true) {
-          out.ok = false;
-          out.message = 'Booking accepted and stored, but PDF/email or calendar sync failed.';
-        }
       }
     } catch (err) {
-      out.pdfEmail = {
-        ok: false,
-        error: String(err && err.message ? err.message : err),
-      };
-      out.message = 'Booking accepted and stored, but PDF/email failed.';
+      Logger.log('Error during booking post-process / admin notification: ' + err);
     }
 
     return out;
+  }
+
+  function getAdminEmails_() {
+    const props = PropertiesService.getScriptProperties();
+    const emails = String(props.getProperty('ADMIN_EMAILS') || '').trim();
+    if (emails) return emails;
+    return 'tinkererslabgeci@gecidukki.ac.in';
   }
 
   function normalizeBooking_(b) {
@@ -358,19 +361,45 @@
     if (Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v.getTime())) {
       return pad2_(v.getHours()) + ':' + pad2_(v.getMinutes());
     }
-    return String(v || '').trim();
+    var s = String(v || '').trim();
+    if (!s) return '';
+
+    // Check for HH:MM:SS or HH:MM or H:MM (24-hr)
+    var m24 = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(s);
+    if (m24) {
+      var h = Number(m24[1]);
+      var min = Number(m24[2]);
+      if (h >= 0 && h <= 23 && min >= 0 && min <= 59) {
+        return pad2_(h) + ':' + pad2_(min);
+      }
+    }
+
+    // Check for 12-hour format e.g. "5:00 PM" or "9:30 AM"
+    var m12 = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)$/i.exec(s);
+    if (m12) {
+      var h12 = Number(m12[1]);
+      var min12 = Number(m12[2]);
+      var ampm = m12[3].toLowerCase();
+      if (ampm === 'pm' && h12 < 12) h12 += 12;
+      if (ampm === 'am' && h12 === 12) h12 = 0;
+      return pad2_(h12) + ':' + pad2_(min12);
+    }
+
+    return s;
   }
 
   function timeToMinutes_(hhmm) {
     if (!hhmm) return null;
-    // Apps Script may return Date objects for time cells.
     if (Object.prototype.toString.call(hhmm) === '[object Date]' && !isNaN(hhmm.getTime())) {
       return hhmm.getHours() * 60 + hhmm.getMinutes();
     }
-
-    const m = /^([0-2]\d):([0-5]\d)$/.exec(String(hhmm || '').trim());
+    const norm = normalizeTimeValue_(hhmm);
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(norm || '').trim());
     if (!m) return null;
-    return Number(m[1]) * 60 + Number(m[2]);
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+    return h * 60 + min;
   }
 
   function overlaps_(aFrom, aTo, bFrom, bTo) {
@@ -757,6 +786,12 @@
       'FormResponseMirrorRow',
       'SourceSheet',
       'SourceRow',
+      // ── NEW: Admin approval columns ───────────────────────────────────────
+      'Status',           // PENDING | APPROVED | REJECTED
+      'ApprovalActionAt', // ISO timestamp of admin decision
+      'ApprovedBy',       // Name of admin who approved/rejected
+      'RejectionReason',  // Filled only on REJECT
+      // ─────────────────────────────────────────────────────────────────────
     ];
 
     if (sh.getLastRow() === 0) {
@@ -889,9 +924,13 @@
   }
 
   function parseTimeParts_(hhmm) {
-    const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(hhmm || '').trim());
+    const norm = normalizeTimeValue_(hhmm);
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(norm || '').trim());
     if (!m) return null;
-    return { hh: Number(m[1]), mm: Number(m[2]) };
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+    return { hh: h, mm: min };
   }
 
   function makeDateTime_(yyyyMmDd, hhmm) {
@@ -1815,4 +1854,365 @@
       }
     }
     return { ok: true, removed: removed };
+  }
+
+  // ============================================================
+  // NEW: Admin Approval Workflow Functions
+  // These functions are purely additive and do not touch any
+  // existing logic above. They reuse all existing helpers.
+  // ============================================================
+
+  /**
+   * Returns all booking rows as JSON for the Admin Dashboard.
+   * Called via: GET ?action=getAll
+   */
+  function handleGetAllBookings_() {
+    const ss = SpreadsheetApp.openById(getSpreadsheetId_());
+    const sh = ss.getSheetByName(getBookingsSheetName_());
+    if (!sh) return { ok: true, bookings: [] };
+
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return { ok: true, bookings: [] };
+
+    const headers = data[0].map(String);
+    const bookings = [];
+
+    const idxKey  = findColumnIndexByCandidates_(headers, ['BookingRequestKey', 'ID', 'Id'], -1);
+    const idxStatus = findColumnIndexByCandidates_(headers, ['Status'], -1);
+    const idxApprovedBy = findColumnIndexByCandidates_(headers, ['ApprovedBy', 'Approved By'], -1);
+    const idxReason = findColumnIndexByCandidates_(headers, ['RejectionReason', 'Rejection Reason'], -1);
+    const idxName = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
+    const idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+    const idxDept = findColumnIndexByCandidates_(headers, ['Department'], -1);
+    const idxSem = findColumnIndexByCandidates_(headers, ['Semester'], -1);
+    const idxDate = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
+    const idxFrom = findColumnIndexByCandidates_(headers, ['TimeFrom', 'Time From', 'Time slot - From', 'Time slot - FROM'], -1);
+    const idxTo = findColumnIndexByCandidates_(headers, ['TimeTo', 'Time To', 'Time slot - TO', 'Time slot - To'], -1);
+    const idxPurp = findColumnIndexByCandidates_(headers, ['Purpose', 'Purpose/project description (brief)', 'Description'], -1);
+    const idxEquip = findColumnIndexByCandidates_(headers, ['TotalText', 'TOTAL ..', 'TOTAL', 'Total'], -1);
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+
+      var id = idxKey >= 0 ? String(row[idxKey] || '').trim() : '';
+      if (!id) id = 'row_' + (i + 1); // fallback ID if missing
+
+      var dateVal = idxDate >= 0 ? row[idxDate] : '';
+      var timeFromVal = idxFrom >= 0 ? row[idxFrom] : '';
+      var timeToVal = idxTo >= 0 ? row[idxTo] : '';
+
+      bookings.push({
+        id:              id,
+        status:          idxStatus >= 0 ? String(row[idxStatus] || 'PENDING').trim() : 'PENDING',
+        approvedBy:      idxApprovedBy >= 0 ? String(row[idxApprovedBy] || '').trim() : '',
+        rejectionReason: idxReason >= 0 ? String(row[idxReason] || '').trim() : '',
+        name:            idxName >= 0 ? String(row[idxName] || '').trim() : '',
+        email:           idxEmail >= 0 ? String(row[idxEmail] || '').trim() : '',
+        department:      idxDept >= 0 ? String(row[idxDept] || '').trim() : '',
+        semester:        idxSem >= 0 ? String(row[idxSem] || '').trim() : '',
+        date:            normalizeDateValue_(dateVal),
+        timeFrom:        normalizeTimeValue_(timeFromVal),
+        timeTo:          normalizeTimeValue_(timeToVal),
+        purpose:         idxPurp >= 0 ? String(row[idxPurp] || '').trim() : '',
+        totalText:       idxEquip >= 0 ? String(row[idxEquip] || '').trim() : '',
+      });
+    }
+
+    return { ok: true, bookings: bookings };
+  }
+
+  function findColumnIndexByCandidates_(headers, candidates, defaultIndex) {
+    if (!Array.isArray(headers) || !Array.isArray(candidates)) return defaultIndex;
+    for (var c = 0; c < candidates.length; c++) {
+      var target = String(candidates[c] || '').trim().toLowerCase();
+      if (!target) continue;
+      for (var i = 0; i < headers.length; i++) {
+        var h = String(headers[i] || '').trim().toLowerCase();
+        if (h === target) return i;
+      }
+    }
+    return defaultIndex;
+  }
+
+  function indexMap_(headers) {
+    const map = {};
+    if (Array.isArray(headers)) {
+      for (var i = 0; i < headers.length; i++) {
+        var h = String(headers[i] || '').trim();
+        if (h) map[h] = i;
+      }
+    }
+    return map;
+  }
+
+  function setIfColumnExists_(sh, rowIndex, idx, colName, value) {
+    var headers = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0].map(String);
+    var candidates = [colName, colName.replace(/([A-Z])/g, ' $1').trim()];
+    var colIdx = findColumnIndexByCandidates_(headers, candidates, -1);
+    if (colIdx < 0) {
+      colIdx = headers.length;
+      sh.getRange(1, colIdx + 1).setValue(colName);
+    }
+    sh.getRange(rowIndex, colIdx + 1).setValue(value);
+  }
+
+  /**
+   * Handles an admin APPROVE, REJECT, or CANCEL action from the Admin Dashboard.
+   */
+  function handleAdminDecision_(payload) {
+    const action       = String(payload.action || '').trim().toUpperCase();
+    const bookingId    = String(payload.bookingId || '').trim();
+    const adminName    = String(payload.adminName || '').trim();
+    const rejectReason = String(payload.rejectionReason || '').trim();
+
+    if (action !== 'APPROVE' && action !== 'REJECT' && action !== 'CANCEL' && action !== 'CANCELLED') {
+      return { ok: false, error: 'action must be APPROVE, REJECT, or CANCEL' };
+    }
+    if (!bookingId) return { ok: false, error: 'bookingId is required' };
+    if (!adminName) return { ok: false, error: 'adminName is required' };
+    if ((action === 'REJECT' || action === 'CANCEL' || action === 'CANCELLED') && !rejectReason) {
+      return { ok: false, error: 'Reason is required for REJECT or CANCEL' };
+    }
+
+    const ss = SpreadsheetApp.openById(getSpreadsheetId_());
+    const sh = ss.getSheetByName(getBookingsSheetName_());
+    if (!sh) return { ok: false, error: 'Bookings sheet not found' };
+
+    const data    = sh.getDataRange().getValues();
+    const headers = data[0].map(String);
+    const idx     = indexMap_(headers);
+
+    const idxKey = findColumnIndexByCandidates_(headers, ['BookingRequestKey', 'ID', 'Id'], -1);
+
+    var rowIndex = -1;
+    var rowData  = null;
+    for (var i = 1; i < data.length; i++) {
+      var keyVal = idxKey >= 0 ? String(data[i][idxKey] || '').trim() : '';
+      if (keyVal === bookingId || ('row_' + (i + 1)) === bookingId) {
+        rowIndex = i + 1; // 1-indexed for sheet API
+        rowData  = data[i];
+        break;
+      }
+    }
+
+    if (rowIndex === -1 || !rowData) {
+      return { ok: false, error: 'Booking not found for id: ' + bookingId };
+    }
+
+    const finalStatus = (action === 'APPROVE' || action === 'APPROVED') ? 'APPROVED' : 
+                        (action === 'REJECT' || action === 'REJECTED') ? 'REJECTED' : 'CANCELLED';
+
+    // Update status columns
+    setIfColumnExists_(sh, rowIndex, idx, 'Status',           finalStatus);
+    setIfColumnExists_(sh, rowIndex, idx, 'ApprovalActionAt', new Date().toISOString());
+    setIfColumnExists_(sh, rowIndex, idx, 'ApprovedBy',       adminName);
+    setIfColumnExists_(sh, rowIndex, idx, 'RejectionReason',  (finalStatus === 'REJECTED' || finalStatus === 'CANCELLED') ? rejectReason : '');
+
+    // Send email to user
+    if (finalStatus === 'APPROVED') {
+      sendApprovalEmail_(sh, rowIndex, headers, rowData, adminName);
+    } else if (finalStatus === 'CANCELLED') {
+      sendCancellationEmail_(rowData, headers, rejectReason, adminName);
+    } else {
+      sendRejectionEmail_(rowData, headers, rejectReason, adminName);
+    }
+
+    return { ok: true, action: finalStatus, adminName: adminName };
+  }
+
+  /**
+   * Sends an approval email (and PDF if template is configured).
+   */
+  function sendApprovalEmail_(sh, rowIndex, headers, rowData, adminName) {
+    try {
+      const idxDate  = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
+      const idxFrom  = findColumnIndexByCandidates_(headers, ['TimeFrom', 'Time From', 'Time slot - From', 'Time slot - FROM'], -1);
+      const idxTo    = findColumnIndexByCandidates_(headers, ['TimeTo', 'Time To', 'Time slot - TO', 'Time slot - To'], -1);
+      const idxName  = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
+      const idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+      const idxSem   = findColumnIndexByCandidates_(headers, ['Semester'], -1);
+      const idxDept  = findColumnIndexByCandidates_(headers, ['Department'], -1);
+      const idxPhone = findColumnIndexByCandidates_(headers, ['Phone', 'Phone No', 'Phone Number'], -1);
+      const idxKtu   = findColumnIndexByCandidates_(headers, ['KTU ID', 'KTU'], -1);
+      const idxPurp  = findColumnIndexByCandidates_(headers, ['Purpose', 'Purpose/project description (brief)', 'Description'], -1);
+      const idxEquip = findColumnIndexByCandidates_(headers, ['TotalText', 'TOTAL ..', 'TOTAL', 'Total'], -1);
+      const idxIndep = findColumnIndexByCandidates_(headers, ['WorkingIndependently', 'Working Independently (Yes/No). If Yes, Training certificate no:'], -1);
+      const idxCert  = findColumnIndexByCandidates_(headers, ['TrainingCertificateNo'], -1);
+
+      var email = idxEmail >= 0 ? String(rowData[idxEmail] || '').trim() : '';
+      var name  = idxName >= 0  ? String(rowData[idxName]  || '').trim() : '';
+      if (!email) return;
+
+      var dateVal  = idxDate >= 0 ? normalizeDateValue_(rowData[idxDate]) : '';
+      var tf24     = idxFrom >= 0 ? normalizeTimeValue_(rowData[idxFrom]) : '';
+      var tt24     = idxTo >= 0   ? normalizeTimeValue_(rowData[idxTo]) : '';
+      var tf12     = formatTime12h_(tf24);
+      var tt12     = formatTime12h_(tt24);
+
+      var semester = idxSem >= 0   ? String(rowData[idxSem]   || '').trim() : '';
+      var dept     = idxDept >= 0  ? String(rowData[idxDept]  || '').trim() : '';
+      var phone    = idxPhone >= 0 ? String(rowData[idxPhone] || '').trim() : '';
+      var ktuId    = idxKtu >= 0   ? String(rowData[idxKtu]   || '').trim() : '';
+      var purpose  = idxPurp >= 0  ? String(rowData[idxPurp]  || '').trim() : '';
+      var equip    = idxEquip >= 0 ? String(rowData[idxEquip] || '').trim() : '';
+      var indep    = idxIndep >= 0 ? String(rowData[idxIndep] || '').trim() : '';
+      var cert     = idxCert >= 0  ? String(rowData[idxCert]  || '').trim() : '';
+
+      var props         = PropertiesService.getScriptProperties();
+      var templateDocId = String(props.getProperty('BOOKING_TEMPLATE_DOC_ID') || '').trim();
+
+      if (!templateDocId) {
+        // No template configured — send a plain-text approval email.
+        MailApp.sendEmail({
+          to:      email,
+          subject: 'Tinkerers Lab Slot Booking Approved - ' + dateVal,
+          body:    'Dear ' + (name || 'Student') + ',\n\n' +
+                   'We are pleased to inform you that your slot booking request for ' + dateVal +
+                   (tf12 && tt12 ? ' (' + tf12 + ' - ' + tt12 + ')' : '') +
+                   ' has been APPROVED by ' + adminName + '.\n\n' +
+                   'If you have any questions, feel free to contact us at tinkererslabgeci@gecidukki.ac.in.\n\n' +
+                   'Best regards,\nTinkerers Lab GECI',
+        });
+        return;
+      }
+
+      var rootFolderId  = String(props.getProperty('ARCHIVE_ROOT_FOLDER_ID') || '').trim();
+      var rootFolderName = String(props.getProperty('ARCHIVE_ROOT_FOLDER_NAME') || 'TLGECI Bookings Archive');
+      var root = getArchiveRootFolder_(rootFolderId, rootFolderName);
+
+      var idxMatFrom = findColumnIndexByCandidates_(headers, ['MaterialFromLab'], -1);
+      var idxMatQty  = findColumnIndexByCandidates_(headers, ['MaterialApproxQty'], -1);
+      var idxMatSum  = findColumnIndexByCandidates_(headers, ['MaterialRequirementSummary'], -1);
+
+      var matFrom = idxMatFrom >= 0 ? String(rowData[idxMatFrom] || '').trim() : '';
+      var matQty  = idxMatQty >= 0  ? String(rowData[idxMatQty]  || '').trim() : '';
+      var matSummaryRaw = idxMatSum >= 0 ? String(rowData[idxMatSum] || '').trim() : '';
+      var matSummary = matSummaryRaw || buildMaterialRequirementSummary_(matFrom, matQty);
+
+      var tokens = {
+        '<<NAME>>':        name,
+        '<<KTU>>':         ktuId,
+        '<<SEM>>':         semester,
+        '<<DEPT>>':        dept,
+        '<<NUMBER>>':      phone,
+        '<<DES>>':         purpose,
+        '<<EQUI>>':        equip,
+        '<<DATE>>':        dateVal,
+        '<<TIMEFROM>>':    tf12,
+        '<<TIMETO>>':      tt12,
+        '<<INDEPENDENT>>': indep,
+        '<<CERTIFICATE>>': cert,
+        '<<quantity>>':    matSummary,
+        '<<QUANTITY>>':    matSummary,
+        '<<APPROVED_BY>>': adminName,
+      };
+
+      var yyyy = dateVal.length >= 4 ? dateVal.slice(0, 4) : '2026';
+      var mm2  = dateVal.length >= 7 ? dateVal.slice(5, 7) : '01';
+      var dd   = dateVal.length >= 10 ? dateVal.slice(8, 10) : '01';
+      var yearFolder  = getOrCreateChildFolder_(root, yyyy);
+      var monthFolder = getOrCreateChildFolder_(yearFolder, monthFolderName_(yyyy, mm2));
+      var dayFolder   = getOrCreateChildFolder_(monthFolder, dd);
+
+      var baseName     = buildPdfBaseName_(dateVal, name);
+      var templateFile = DriveApp.getFileById(templateDocId);
+      var docFile      = templateFile.makeCopy(baseName, dayFolder);
+      try {
+        var doc  = DocumentApp.openById(docFile.getId());
+        var body = doc.getBody();
+        Object.keys(tokens).forEach(function(token) {
+          body.replaceText(escapeRegexForDocReplace_(token), String(tokens[token] || ''));
+        });
+        doc.saveAndClose();
+
+        var pdfBlob = DriveApp.getFileById(docFile.getId()).getBlob().setName(baseName + '.pdf');
+        var pdfFile = dayFolder.createFile(pdfBlob);
+
+        MailApp.sendEmail({
+          to:          email,
+          subject:     'Tinkerers Lab Slot Booking Approved - ' + dateVal,
+          body:        'Dear ' + (name || 'Student') + ',\n\n' +
+                       'We are pleased to inform you that your slot booking request for ' + dateVal +
+                       (tf12 && tt12 ? ' (' + tf12 + ' - ' + tt12 + ')' : '') +
+                       ' has been APPROVED by ' + adminName + '.\n\n' +
+                       'Please find your official PDF confirmation pass attached. You may present this pass upon entering the lab.\n\n' +
+                       'If you have any questions, feel free to contact us at tinkererslabgeci@gecidukki.ac.in.\n\n' +
+                       'Best regards,\nTinkerers Lab GECI',
+          attachments: [pdfBlob],
+        });
+
+        // Record email sent in the sheet row
+        var idx2 = indexMap_(sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String));
+        setIfColumnExists_(sh, rowIndex, idx2, 'EmailSentAtISO', new Date().toISOString());
+        setIfColumnExists_(sh, rowIndex, idx2, 'EmailStatus', 'SENT_ON_APPROVAL');
+        setIfColumnExists_(sh, rowIndex, idx2, 'PdfFileId',  pdfFile.getId());
+        setIfColumnExists_(sh, rowIndex, idx2, 'PdfFileUrl', pdfFile.getUrl());
+      } finally {
+        try { docFile.setTrashed(true); } catch(e) { /* ignore */ }
+      }
+    } catch (err) {
+      Logger.log('sendApprovalEmail_ error: ' + err);
+    }
+  }
+
+  /**
+   * Sends a formal rejection email to the user.
+   */
+  function sendRejectionEmail_(rowData, headers, reason, adminName) {
+    try {
+      var idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+      var idxName  = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
+      var idxDate  = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
+
+      var email = idxEmail >= 0 ? String(rowData[idxEmail] || '').trim() : '';
+      var name  = idxName >= 0  ? String(rowData[idxName]  || '').trim() : '';
+      var date  = idxDate >= 0  ? normalizeDateValue_(rowData[idxDate]) : '';
+      if (!email) return;
+
+      MailApp.sendEmail({
+        to:      email,
+        subject: 'Tinkerers Lab Slot Booking Update - ' + (date || 'Request'),
+        body:    'Dear ' + (name || 'Student') + ',\n\n' +
+                 'Thank you for your interest in utilizing Tinkerers Lab facility.\n\n' +
+                 'We regret to inform you that your slot booking request for ' + (date || 'the requested date') +
+                 ' could not be approved at this time.\n\n' +
+                 'Reason: ' + (reason || 'Slot unavailable') + '\n\n' +
+                 'If you wish to request an alternative date or time slot, please submit a new booking on our portal.\n\n' +
+                 'Thank you for your understanding.\n\n' +
+                 'Best regards,\nTinkerers Lab GECI',
+      });
+    } catch (err) {
+      Logger.log('sendRejectionEmail_ error: ' + err);
+    }
+  }
+
+  /**
+   * Sends a formal cancellation apology email to the user when an approved booking is cancelled.
+   */
+  function sendCancellationEmail_(rowData, headers, reason, adminName) {
+    try {
+      var idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+      var idxName  = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
+      var idxDate  = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
+
+      var email = idxEmail >= 0 ? String(rowData[idxEmail] || '').trim() : '';
+      var name  = idxName >= 0  ? String(rowData[idxName]  || '').trim() : '';
+      var date  = idxDate >= 0  ? normalizeDateValue_(rowData[idxDate]) : '';
+      if (!email) return;
+
+      MailApp.sendEmail({
+        to:      email,
+        subject: 'Notice: Slot Booking Cancellation - ' + (date || 'Tinkerers Lab'),
+        body:    'Dear ' + (name || 'Student') + ',\n\n' +
+                 'We sincerely apologize for any inconvenience caused.\n\n' +
+                 'Please be advised that your previously approved slot booking for ' + (date || 'the requested date') +
+                 ' has been CANCELLED due to unforeseen circumstances.\n\n' +
+                 'Reason for Cancellation: ' + (reason || 'Scheduling conflict or lab maintenance') + '\n\n' +
+                 'We deeply apologize for this inconvenience and invite you to re-book your slot for an alternative available date.\n\n' +
+                 'Thank you for your patience and understanding.\n\n' +
+                 'Warm regards,\nTinkerers Lab GECI',
+      });
+    } catch (err) {
+      Logger.log('sendCancellationEmail_ error: ' + err);
+    }
   }

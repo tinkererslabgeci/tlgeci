@@ -16,7 +16,7 @@ const GOOGLE_FORM_VIEW_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSeNywMWGjbzX1fAMmXDxcKGYNpsBDUSmS4UV_bdsj-9zAQnAQ/viewform'
 const GOOGLE_FORM_RESPONSE_URL = GOOGLE_FORM_VIEW_URL.replace(/\/viewform(?:\?.*)?$/, '/formResponse')
 
-const APPS_SCRIPT_WEB_APP_URL =
+export const APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbxdcdfDupYEEyTt-rojb7SRVKCinK0Iq0DfUy4uu4giRmdYn_Rh8MZJwy8Bad9AgO9b8Q/exec'
 
 // IMPORTANT: to submit directly to Google Forms, we need the entry IDs.
@@ -1380,14 +1380,13 @@ export default function SlotBookingPage() {
     setRetryBookingPayload(null)
   }
 
-  function showSubmitPopup(targetEmail, pdfUrl = '') {
-    const mail = String(targetEmail || '').trim()
-    const line = mail ? `Request sent to ${mail}.` : 'Request sent to your entered email ID.'
+  function showSubmitPopup(targetEmail) {
+    const line = 'Your slot booking request has been submitted successfully! Status: PENDING ADMIN APPROVAL. Our team will review your request, and you will receive a confirmation email with your PDF booking pass once approved by an administrator.'
     setSubmitNotice({
       type: 'success',
-      title: 'Request submitted successfully',
+      title: 'Request Submitted (Pending Admin Approval)',
       message: line,
-      pdfUrl: String(pdfUrl || '').trim(),
+      pdfUrl: '',
     })
   }
 
@@ -1410,11 +1409,10 @@ export default function SlotBookingPage() {
         return
       }
 
-      const pdfUrl = String(resp?.pdfEmail?.pdfFileUrl || '')
       setSheetStatus('Stored in Bookings sheet.')
       setSheetError('')
       setRetryBookingPayload(null)
-      showSubmitPopup(retryBookingPayload.email, pdfUrl)
+      showSubmitPopup(retryBookingPayload.email)
       onClearSheet()
     } catch (err) {
       setSheetStatus('')
@@ -1518,8 +1516,7 @@ export default function SlotBookingPage() {
             submitBtnRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
             return
           }
-          const pdfUrl = String((resp && resp.pdfEmail && resp.pdfEmail.pdfFileUrl) || '')
-          showSubmitPopup(booking.email, pdfUrl)
+          showSubmitPopup(booking.email)
           onClearSheet()
           return
         }

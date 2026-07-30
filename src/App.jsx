@@ -10,6 +10,7 @@ import EventsPage from './pages/EventsPage.jsx'
 import TeamPage from './pages/TeamPage.jsx'
 import GalleryPage from './pages/GalleryPage.jsx'
 import SlotBookingPage from './pages/SlotBookingPage.jsx'
+import AdminDashboard from './pages/AdminDashboard.jsx'
 
 const COUNTRY_CODES = ['+91', '+1', '+44', '+61', '+65', '+971']
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
@@ -138,6 +139,7 @@ function AppShell() {
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/booking" element={<SlotBookingPage />} />
+                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
