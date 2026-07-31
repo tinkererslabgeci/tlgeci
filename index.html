@@ -16,24 +16,41 @@
   <meta property="og:description"
     content="A student-operated makerspace at GECI fostering innovation with 3D printers, IoT, and more." />
   <meta property="og:image" content="https://tlgeci.com/logo/logo.jpeg" />
-  <!-- PWA Manifest & iOS Support -->
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/logo/logo.jpeg" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
   <script>
-    // Register Service Worker to enable Install Prompt
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => {
-          console.log('SW registration failed: ', err);
+    if (window.location.pathname.startsWith('/admin')) {
+      const manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      manifest.href = '/manifest.json';
+      document.head.appendChild(manifest);
+
+      const appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      appleIcon.href = '/logo/logo.jpeg';
+      document.head.appendChild(appleIcon);
+
+      const appleMobileWeb = document.createElement('meta');
+      appleMobileWeb.name = 'apple-mobile-web-app-capable';
+      appleMobileWeb.content = 'yes';
+      document.head.appendChild(appleMobileWeb);
+
+      const appleStatus = document.createElement('meta');
+      appleStatus.name = 'apple-mobile-web-app-status-bar-style';
+      appleStatus.content = 'black-translucent';
+      document.head.appendChild(appleStatus);
+
+      // Register Service Worker to enable Install Prompt
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('SW registration failed: ', err);
+          });
         });
-      });
+      }
     }
   </script>
 </body>

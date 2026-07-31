@@ -1,8 +1,8 @@
 {
-  "name": "Tinkerers' Lab GECI",
-  "short_name": "TL GECI",
-  "description": "Student-operated makerspace at GECI fostering innovation with 3D printers, IoT, and more.",
-  "start_url": "/",
+  "name": "TL Admin Dashboard",
+  "short_name": "TL Admin",
+  "description": "Admin Dashboard for Tinkerers' Lab GECI.",
+  "start_url": "/admin",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#f59e0b",
