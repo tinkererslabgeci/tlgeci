@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tinkerers' Lab GECI</title>
+  <meta name="google-site-verification" content="pFEqf8-twzF7xTSehbsyQ9v6sXeHyo_PSftb5nkAtnk" />
+  <meta name="description"
+    content="Tinkerers' Lab @ GECI - A student-operated makerspace providing access to 3D printers, laser cutters, electronics, and tools for innovation." />
+  <link rel="icon" type="image/png" href="/logo/logo.jpeg" />
+
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Tinkerers' Lab GECI" />
+  <meta property="og:description"
+    content="A student-operated makerspace at GECI fostering innovation with 3D printers, IoT, and more." />
+  <meta property="og:image" content="https://tlgeci.com/logo/logo.jpeg" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if (window.location.pathname.startsWith('/admin')) {
+      const manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      manifest.href = '/admin-manifest.json';
+      document.head.appendChild(manifest);
+
+      const appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      appleIcon.href = '/logo/logo.jpeg';
+      document.head.appendChild(appleIcon);
+
+      const appleMobileWeb = document.createElement('meta');
+      appleMobileWeb.name = 'apple-mobile-web-app-capable';
+      appleMobileWeb.content = 'yes';
+      document.head.appendChild(appleMobileWeb);
+
+      const appleStatus = document.createElement('meta');
+      appleStatus.name = 'apple-mobile-web-app-status-bar-style';
+      appleStatus.content = 'black-translucent';
+      document.head.appendChild(appleStatus);
+
+      // Register Service Worker to enable Install Prompt
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('SW registration failed: ', err);
+          });
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>
