@@ -1,0 +1,23 @@
+{
+  "name": "Tinkerers' Lab GECI",
+  "short_name": "TL GECI",
+  "description": "Student-operated makerspace at GECI fostering innovation with 3D printers, IoT, and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/logo/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
