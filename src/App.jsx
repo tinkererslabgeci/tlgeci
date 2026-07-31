@@ -30,6 +30,19 @@ function AppShell() {
   const isHome = location.pathname === '/'
   const isAdmin = location.pathname.startsWith('/admin')
 
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'light'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }
+
   useEffect(() => {
     // Prevent the browser from automatically restoring the scroll position on reload
     if ('scrollRestoration' in window.history) {
@@ -126,7 +139,7 @@ function AppShell() {
       <AIChat />
 
       <div className="appFg">
-        {!isAdmin && <NavBar deferMs={isHome ? 1800 : 0} />}
+        {!isAdmin && <NavBar deferMs={isHome ? 1800 : 0} theme={theme} toggleTheme={toggleTheme} />}
         <main style={isHome ? { padding: 0 } : isAdmin ? { padding: '1rem 0 4rem' } : { padding: '3.25rem 0 4rem' }}>
           {isHome ? (
             <Routes>
@@ -140,7 +153,7 @@ function AppShell() {
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/booking" element={<SlotBookingPage />} />
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<AdminDashboard theme={theme} toggleTheme={toggleTheme} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>

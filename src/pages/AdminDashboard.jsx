@@ -4,7 +4,7 @@ import '../index.css';
 
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || 'admin123'; // Fallback for local testing if env is missing
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ theme, toggleTheme }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
 

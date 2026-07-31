@@ -11,23 +11,11 @@ const linkStyle = ({ isActive }) => ({
   color: 'var(--text)',
 })
 
-export default function NavBar({ deferMs = 0 }) {
+export default function NavBar({ deferMs = 0, theme, toggleTheme }) {
   const [visible, setVisible] = useState(deferMs === 0)
   const [isMobile, setIsMobile] = useState(false)
   const [hiddenOnScroll, setHiddenOnScroll] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light'
-  })
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
-  }
 
   useEffect(() => {
     if (!deferMs) {
