@@ -4,7 +4,7 @@
   "description": "Admin Dashboard for Tinkerers' Lab GECI.",
   "start_url": "/admin",
   "display": "standalone",
-  "background_color": "#111827",
+  "background_color": "#ffffff",
   "theme_color": "#f59e0b",
   "icons": [
     {

@@ -315,7 +315,7 @@ export default function AdminDashboard({ theme, toggleTheme }) {
         {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-62)' }}>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Status</th>
@@ -343,7 +343,7 @@ export default function AdminDashboard({ theme, toggleTheme }) {
 
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '1rem 0.5rem' }}>
+                      <td data-label="Status" style={{ padding: '1rem 0.5rem' }}>
                         <span style={{
                           padding: '0.3rem 0.65rem',
                           borderRadius: '6px',
@@ -358,22 +358,22 @@ export default function AdminDashboard({ theme, toggleTheme }) {
                         {b.approvedBy && <div style={{ fontSize: '0.75rem', marginTop: '0.4rem', color: 'var(--text-62)' }}>By: {b.approvedBy}</div>}
                         {b.rejectionReason && <div style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: (isRejected ? '#dc2626' : '#ea580c') }}>Reason: {b.rejectionReason}</div>}
                       </td>
-                      <td style={{ padding: '1rem 0.5rem' }}>
+                      <td data-label="Name / Contact" style={{ padding: '1rem 0.5rem' }}>
                         <div style={{ fontWeight: 'bold' }}>{b.name}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-80)' }}>{b.email}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-62)' }}>{b.department}, Sem {b.semester}</div>
                       </td>
-                      <td style={{ padding: '1rem 0.5rem', fontSize: '0.9rem' }}>
+                      <td data-label="Date & Time" style={{ padding: '1rem 0.5rem', fontSize: '0.9rem' }}>
                         <div style={{ fontWeight: 'bold' }}>{b.date}</div>
                         <div>{b.timeFrom} - {b.timeTo}</div>
                       </td>
-                      <td style={{ padding: '1rem 0.5rem', maxWidth: '200px', fontSize: '0.9rem' }}>
+                      <td data-label="Purpose" style={{ padding: '1rem 0.5rem', maxWidth: '200px', fontSize: '0.9rem' }}>
                         {b.purpose}
                       </td>
-                      <td style={{ padding: '1rem 0.5rem', maxWidth: '250px', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+                      <td data-label="Equipments" style={{ padding: '1rem 0.5rem', maxWidth: '250px', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
                         {b.totalText}
                       </td>
-                      <td style={{ padding: '1rem 0.5rem', whiteSpace: 'nowrap' }}>
+                      <td data-label="Actions" style={{ padding: '1rem 0.5rem', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
                           {/* PENDING requests: Approve & Reject buttons */}
                           {isPending && (

@@ -2336,3 +2336,39 @@ textarea.footerContactInput {
   line-height: 1;
 }
 
+/* Mobile responsive admin table */
+@media (max-width: 768px) {
+  .admin-table thead {
+    display: none;
+  }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+    display: block;
+    width: 100%;
+  }
+  .admin-table tr {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 12px;
+    padding: 0.8rem;
+    background: var(--field-bg);
+  }
+  .admin-table td {
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0.75rem 0.25rem !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .admin-table td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+  }
+  .admin-table td::before {
+    content: attr(data-label);
+    font-weight: 800;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+}
