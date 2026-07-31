@@ -28,6 +28,7 @@ export default function App() {
 function AppShell() {
   const location = useLocation()
   const isHome = location.pathname === '/'
+  const isAdmin = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     // Prevent the browser from automatically restoring the scroll position on reload
@@ -125,15 +126,15 @@ function AppShell() {
       <AIChat />
 
       <div className="appFg">
-        <NavBar deferMs={isHome ? 1800 : 0} />
-        <main style={isHome ? { padding: 0 } : { padding: '3.25rem 0 4rem' }}>
+        {!isAdmin && <NavBar deferMs={isHome ? 1800 : 0} />}
+        <main style={isHome ? { padding: 0 } : isAdmin ? { padding: '1rem 0 4rem' } : { padding: '3.25rem 0 4rem' }}>
           {isHome ? (
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           ) : (
-            <div className="container">
+            <div className={isAdmin ? "" : "container"}>
               <Routes>
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/team" element={<TeamPage />} />
@@ -146,6 +147,7 @@ function AppShell() {
           )}
         </main>
 
+        {!isAdmin && (
         <footer className="siteFooter">
           <div className="grid cols-3">
             <div className="footerCol">
@@ -296,6 +298,7 @@ function AppShell() {
             © {new Date().getFullYear()} All rights reserved • TL GECI
           </div>
         </footer>
+        )}
       </div>
     </>
   )
