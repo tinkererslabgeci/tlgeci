@@ -796,7 +796,7 @@ export default function AIChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/Meta-Llama-3-8B-Instruct',
+          model: 'Qwen/Qwen2.5-72B-Instruct',
           messages: chatMessages,
           max_tokens: 500,
           temperature: 0.7,
