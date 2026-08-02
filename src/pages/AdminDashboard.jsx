@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import AdminEvents from '../components/AdminEvents';
+import AdminGallery from '../components/AdminGallery';
 import { APPS_SCRIPT_WEB_APP_URL } from './SlotBookingPage';
 import '../index.css';
 
@@ -8,6 +10,7 @@ export default function AdminDashboard({ theme, toggleTheme }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
 
+  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings', 'events', 'gallery'
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -250,9 +253,50 @@ export default function AdminDashboard({ theme, toggleTheme }) {
     <div className="sectionStack">
       <header className="pageHeader">
         <h1 className="pageTitle">Admin Dashboard</h1>
-        <p className="pageSubtitle">Manage Slot Bookings & Approvals</p>
+        <p className="pageSubtitle">Manage Data & Approvals</p>
       </header>
 
+      {/* Tabs Navigation */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-strong)' }}>
+        <button 
+          onClick={() => setActiveTab('bookings')}
+          style={{ 
+            padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer',
+            fontWeight: 'bold', fontSize: '1.1rem',
+            color: activeTab === 'bookings' ? 'var(--primary-color)' : 'var(--text-62)',
+            borderBottom: activeTab === 'bookings' ? '3px solid var(--primary-color)' : '3px solid transparent'
+          }}
+        >
+          Slot Bookings
+        </button>
+        <button 
+          onClick={() => setActiveTab('events')}
+          style={{ 
+            padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer',
+            fontWeight: 'bold', fontSize: '1.1rem',
+            color: activeTab === 'events' ? 'var(--primary-color)' : 'var(--text-62)',
+            borderBottom: activeTab === 'events' ? '3px solid var(--primary-color)' : '3px solid transparent'
+          }}
+        >
+          Events
+        </button>
+        <button 
+          onClick={() => setActiveTab('gallery')}
+          style={{ 
+            padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer',
+            fontWeight: 'bold', fontSize: '1.1rem',
+            color: activeTab === 'gallery' ? 'var(--primary-color)' : 'var(--text-62)',
+            borderBottom: activeTab === 'gallery' ? '3px solid var(--primary-color)' : '3px solid transparent'
+          }}
+        >
+          Gallery
+        </button>
+      </div>
+
+      {activeTab === 'events' && <AdminEvents />}
+      {activeTab === 'gallery' && <AdminGallery />}
+      
+      {activeTab === 'bookings' && (
       <section className="card" style={{ padding: '1.4rem' }}>
         {/* Live Lab Status Light Control Card */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.2rem', backgroundColor: 'var(--field-bg)', borderRadius: '12px', border: '1px solid var(--border-strong)', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -490,6 +534,7 @@ export default function AdminDashboard({ theme, toggleTheme }) {
           </table>
         </div>
       </section>
+      )}
 
       {/* Action Modal with Security CAPTCHA */}
       {actionModal && (

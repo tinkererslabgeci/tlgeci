@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { allEvents } from "../data/eventsData.js";
 
 function getEventSlug(event) {
   if (event.slug) return event.slug;
@@ -14,7 +13,9 @@ function getEventSlug(event) {
 
 function toDateOnly(dateStr) {
   if (!dateStr) return null;
-  const d = new Date(`${dateStr}T00:00:00`);
+  // If it's already an ISO string with a time component, just parse it directly
+  const isIsoString = dateStr.includes('T');
+  const d = isIsoString ? new Date(dateStr) : new Date(`${dateStr}T00:00:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -129,6 +130,21 @@ function EventDetailsModal({ event, showRegister, onClose }) {
 export default function EventsPage() {
   const [activeEvent, setActiveEvent] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [allEvents, setAllEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        setAllEvents(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch events:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const { upcomingEvents, pastEvents } = useMemo(() => {
     const today = new Date();
@@ -138,8 +154,8 @@ export default function EventsPage() {
     const past = [];
 
     allEvents.forEach((event) => {
-      const start = toDateOnly(event.startDate);
-      const end = toDateOnly(event.endDate || event.startDate);
+      const start = toDateOnly(event.date || event.startDate);
+      const end = toDateOnly(event.endDate || event.date || event.startDate);
 
       if (!start || !end) {
         upcoming.push(event);
@@ -154,19 +170,19 @@ export default function EventsPage() {
       upcomingEvents: upcoming.sort(sortByDateAsc),
       pastEvents: past.sort(sortByDateDesc),
     };
-  }, []);
+  }, [allEvents]);
 
   const eventSlugParam = searchParams.get("event");
 
   useEffect(() => {
-    if (!eventSlugParam) {
+    if (!eventSlugParam || allEvents.length === 0) {
       setActiveEvent(null);
       return;
     }
 
     const matchedEvent = [...upcomingEvents, ...pastEvents].find((event) => getEventSlug(event) === eventSlugParam);
     setActiveEvent(matchedEvent || null);
-  }, [eventSlugParam, upcomingEvents, pastEvents]);
+  }, [eventSlugParam, upcomingEvents, pastEvents, allEvents]);
 
   useEffect(() => {
     if (!activeEvent) return undefined;

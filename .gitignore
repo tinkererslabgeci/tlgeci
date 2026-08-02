@@ -12,3 +12,5 @@ dist
 .env.production.local
 !.env.example
     
+.vercel
+.env.local
