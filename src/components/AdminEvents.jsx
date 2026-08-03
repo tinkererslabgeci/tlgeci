@@ -353,7 +353,6 @@ export default function AdminEvents() {
         </div>
       )}
 
-      )}
 
       {/* Events Search & Grid */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
