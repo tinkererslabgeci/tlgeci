@@ -17,6 +17,20 @@ export const config = {
   },
 };
 
+// Helper to extract Cloudinary public_id from URL
+function getPublicIdFromUrl(url) {
+  if (!url) return null;
+  try {
+    const parts = url.split('/');
+    const filename = parts.pop();
+    const folder = parts.pop();
+    const publicId = `${folder}/${filename.split('.')[0]}`;
+    return publicId;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -40,41 +54,82 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { imageBase64, caption, eventId } = req.body;
+      const { caption, eventId, imageBase64 } = req.body;
 
       if (!imageBase64) {
-        return res.status(400).json({ error: 'Missing image data' });
+        return res.status(400).json({ error: 'Image is required' });
       }
 
+      // Upload image to Cloudinary
       const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-        folder: 'tlgeci/gallery',
+        folder: 'tlgeci-gallery',
       });
 
-      const newGalleryItem = new Gallery({
+      const newImage = new Gallery({
         imageUrl: uploadResponse.secure_url,
         caption: caption || '',
         eventId: eventId || null
       });
 
-      await newGalleryItem.save();
-      
-      // Return populated version if linked to event
-      if (eventId) {
-        await newGalleryItem.populate('eventId', 'title');
-      }
-
-      return res.status(200).json(newGalleryItem);
+      await newImage.save();
+      return res.status(200).json(newImage);
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Failed to upload gallery image' });
+      return res.status(500).json({ error: 'Failed to upload image: ' + error.message });
+    }
+  } else if (req.method === 'PUT') {
+    try {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'Missing image ID' });
+
+      const { caption, eventId, imageBase64 } = req.body;
+
+      const galleryToUpdate = await Gallery.findById(id);
+      if (!galleryToUpdate) return res.status(404).json({ error: 'Image not found' });
+
+      let imageUrl = galleryToUpdate.imageUrl;
+
+      // Only upload new image if one was provided
+      if (imageBase64) {
+        // Upload new
+        const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+          folder: 'tlgeci-gallery',
+        });
+        
+        // Try to delete old image
+        const oldPublicId = getPublicIdFromUrl(imageUrl);
+        if (oldPublicId) {
+          try { await cloudinary.uploader.destroy(oldPublicId); } catch(e) { console.error('Failed to delete old image', e); }
+        }
+        
+        imageUrl = uploadResponse.secure_url;
+      }
+
+      galleryToUpdate.caption = caption !== undefined ? caption : galleryToUpdate.caption;
+      galleryToUpdate.eventId = eventId !== undefined ? (eventId || null) : galleryToUpdate.eventId;
+      galleryToUpdate.imageUrl = imageUrl;
+
+      await galleryToUpdate.save();
+      return res.status(200).json(galleryToUpdate);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to update image: ' + error.message });
     }
   } else if (req.method === 'DELETE') {
     try {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'Missing image ID' });
       
-      const image = await Gallery.findByIdAndDelete(id);
-      if (!image) return res.status(404).json({ error: 'Image not found' });
+      const galleryItem = await Gallery.findById(id);
+      if (!galleryItem) return res.status(404).json({ error: 'Image not found' });
+      
+      // Try to delete image from cloudinary
+      const publicId = getPublicIdFromUrl(galleryItem.imageUrl);
+      if (publicId) {
+        try { await cloudinary.uploader.destroy(publicId); } catch(e) { console.error('Failed to delete image', e); }
+      }
+
+      await Gallery.findByIdAndDelete(id);
       
       res.status(200).json({ message: 'Image deleted successfully' });
     } catch (error) {

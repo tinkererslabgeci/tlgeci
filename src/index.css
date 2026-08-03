@@ -2372,3 +2372,15 @@ textarea.footerContactInput {
     letter-spacing: 0.5px;
   }
 }
+
+.adminFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .adminFormGrid {
+    grid-template-columns: 1fr;
+  }
+}

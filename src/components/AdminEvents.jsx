@@ -5,21 +5,26 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true);
   
   // Form state
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     title: '',
     date: '',
-    time: '',
+    startTime: '',
+    endTime: '',
     venue: "Tinkerers' Lab, GECI",
     description: '',
     fullDescription: '',
     registrationUrl: '',
     customTags: ''
-  });
+  };
+  const [formData, setFormData] = useState(initialFormState);
   
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Edit state
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetchEvents();
@@ -55,37 +60,126 @@ export default function AdminEvents() {
       reader.readAsDataURL(file);
     }
   };
+  
+  // Helper to parse time string into HH:MM for input fields
+  const parseTime = (timeStr) => {
+    if (!timeStr) return { startTime: '', endTime: '' };
+    
+    // Attempt to split by "-" or "to"
+    let parts = timeStr.split('-').map(s => s.trim());
+    if (parts.length !== 2) {
+      parts = timeStr.split('to').map(s => s.trim());
+    }
+    
+    if (parts.length === 2) {
+      const convertTo24Hour = (time) => {
+        const [timePart, modifier] = time.split(' ');
+        if (!timePart || !modifier) return time;
+        
+        let [hours, minutes] = timePart.split(':');
+        if (!minutes) minutes = '00';
+        
+        if (hours === '12') hours = '00';
+        if (modifier.toLowerCase().includes('pm')) hours = (parseInt(hours, 10) + 12).toString();
+        
+        return `${hours.padStart(2, '0')}:${minutes}`;
+      };
+      return { startTime: convertTo24Hour(parts[0]), endTime: convertTo24Hour(parts[1]) };
+    }
+    
+    return { startTime: '', endTime: '' };
+  };
+
+  // Helper to format HH:MM into AM/PM
+  const formatTime = (time24) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${minutes} ${ampm}`;
+  };
+
+  const openEditForm = (event) => {
+    // Extract times
+    const { startTime, endTime } = parseTime(event.time);
+    
+    // Extract Date to YYYY-MM-DD
+    const dateObj = new Date(event.date);
+    const dateStr = !isNaN(dateObj) ? dateObj.toISOString().split('T')[0] : '';
+    
+    setFormData({
+      title: event.title || '',
+      date: dateStr,
+      startTime,
+      endTime,
+      venue: event.venue || '',
+      description: event.description || '',
+      fullDescription: event.fullDescription || '',
+      registrationUrl: event.registrationUrl || '',
+      customTags: event.tags ? event.tags.join(', ') : ''
+    });
+    
+    setImageFile(null); // Keep null unless they upload a new one
+    setImagePreview(event.posterSrc || event.imageUrl);
+    setEditingId(event._id);
+    setShowAddForm(true);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleCancel = () => {
+    setFormData(initialFormState);
+    setImageFile(null);
+    setImagePreview(null);
+    setEditingId(null);
+    setShowAddForm(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.date || !formData.description || !imageFile) {
-      return alert('Please fill in all required fields and select an image');
+    if (!formData.title || !formData.date || !formData.description) {
+      return alert('Please fill in all required fields');
+    }
+    
+    if (!editingId && !imageFile) {
+      return alert('Please select an image for the new event');
+    }
+
+    // Format the time string
+    let finalTime = '';
+    if (formData.startTime && formData.endTime) {
+      finalTime = `${formatTime(formData.startTime)} - ${formatTime(formData.endTime)}`;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
+      const url = editingId ? `/api/events?id=${editingId}` : '/api/events';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const payload = {
+        ...formData,
+        time: finalTime,
+        imageBase64: imageFile // Will be null if they didn't pick a new image during edit
+      };
+      
+      // Delete temporary fields before sending
+      delete payload.startTime;
+      delete payload.endTime;
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          imageBase64: imageFile,
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        setFormData({
-          title: '', date: '', time: '', venue: "Tinkerers' Lab, GECI",
-          description: '', fullDescription: '', registrationUrl: '', customTags: ''
-        });
-        setImageFile(null);
-        setImagePreview(null);
-        e.target.reset();
-        setShowAddForm(false);
+        handleCancel();
         fetchEvents();
-        alert('Event added successfully!');
+        alert(editingId ? 'Event updated successfully!' : 'Event added successfully!');
       } else {
-        let errorMessage = 'Failed to add event';
+        let errorMessage = 'Failed to save event';
         try {
           const data = await res.json();
           errorMessage = data.error || errorMessage;
@@ -102,7 +196,7 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this event? The poster image will also be permanently deleted.')) return;
     
     try {
       const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
@@ -126,7 +220,7 @@ export default function AdminEvents() {
           <p style={{ color: 'var(--text-62)', margin: '0.25rem 0 0 0' }}>Create and manage lab events, workshops, and competitions.</p>
         </div>
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => showAddForm ? handleCancel() : setShowAddForm(true)}
           className="btn btnPrimary"
           style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', fontWeight: '600' }}
         >
@@ -134,7 +228,7 @@ export default function AdminEvents() {
         </button>
       </div>
 
-      {/* Add New Event Form (Hidden by default) */}
+      {/* Add/Edit Event Form (Hidden by default) */}
       {showAddForm && (
         <div style={{
           backgroundColor: 'var(--field-bg)', 
@@ -145,42 +239,47 @@ export default function AdminEvents() {
           boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
           animation: 'fadeInDown 0.3s ease'
         }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem' }}>Create Event</h3>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem' }}>
+            {editingId ? 'Edit Event' : 'Create Event'}
+          </h3>
+          <form onSubmit={handleSubmit} className="adminFormGrid">
             
             {/* Left Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Event Title *</label>
-                <input type="text" name="title" value={formData.title} onChange={handleInputChange} className="input" placeholder="e.g. 3D Printing Workshop" required style={{ width: '100%' }} />
+                <input type="text" name="title" value={formData.title} onChange={handleInputChange} className="input" placeholder="e.g. 3D Printing Workshop" required />
               </div>
-              
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Event Date *</label>
-                  <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="input" required style={{ width: '100%' }} />
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Event Date *</label>
+                <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="input" required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Start Time</label>
+                  <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} className="input" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>End Time</label>
+                  <input type="time" name="endTime" value={formData.endTime} onChange={handleInputChange} className="input" />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Time</label>
-                  <input type="text" name="time" value={formData.time} onChange={handleInputChange} className="input" placeholder="e.g. 4:30 PM - 6:30 PM" style={{ width: '100%' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Venue</label>
-                  <input type="text" name="venue" value={formData.venue} onChange={handleInputChange} className="input" placeholder="Tinkerers' Lab" style={{ width: '100%' }} />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Venue</label>
+                <input type="text" name="venue" value={formData.venue} onChange={handleInputChange} className="input" placeholder="Tinkerers' Lab" />
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Registration URL</label>
-                <input type="url" name="registrationUrl" value={formData.registrationUrl} onChange={handleInputChange} className="input" placeholder="https://forms.gle/..." style={{ width: '100%' }} />
+                <input type="url" name="registrationUrl" value={formData.registrationUrl} onChange={handleInputChange} className="input" placeholder="https://forms.gle/..." />
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Custom Tags (Comma separated)</label>
-                <input type="text" name="customTags" value={formData.customTags} onChange={handleInputChange} className="input" placeholder="e.g. workshop, 3d-printing, hardware" style={{ width: '100%' }} />
+                <input type="text" name="customTags" value={formData.customTags} onChange={handleInputChange} className="input" placeholder="e.g. workshop, 3d-printing" />
                 <small style={{ color: 'var(--text-62)', fontSize: '0.8rem' }}>Leave blank to auto-generate tags from title and description.</small>
               </div>
             </div>
@@ -198,7 +297,9 @@ export default function AdminEvents() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Event Poster Image *</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>
+                  Event Poster Image {editingId ? '(Optional to change)' : '*'}
+                </label>
                 <div style={{ 
                   border: '2px dashed var(--border-strong)', 
                   borderRadius: '12px', 
@@ -216,14 +317,17 @@ export default function AdminEvents() {
                       <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Click or drag image to upload</span>
                     </div>
                   )}
-                  <input type="file" accept="image/*" onChange={handleFileChange} required style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                  <input type="file" accept="image/*" onChange={handleFileChange} required={!editingId} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
                 </div>
               </div>
             </div>
 
-            <div style={{ gridColumn: '1 / -1', marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ gridColumn: '1 / -1', marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button type="button" onClick={handleCancel} className="btn" style={{ padding: '0.8rem 2.5rem', fontSize: '1.05rem', borderRadius: '50px' }}>
+                Cancel
+              </button>
               <button type="submit" className="btn btnPrimary" disabled={isSubmitting} style={{ padding: '0.8rem 2.5rem', fontSize: '1.05rem', borderRadius: '50px' }}>
-                {isSubmitting ? 'Creating Event...' : 'Publish Event'}
+                {isSubmitting ? 'Saving...' : (editingId ? 'Update Event' : 'Publish Event')}
               </button>
             </div>
           </form>
@@ -240,8 +344,8 @@ export default function AdminEvents() {
           zIndex: 9999, color: 'white'
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>⏳</div>
-          <h2 style={{ margin: 0 }}>Publishing Event...</h2>
-          <p style={{ color: 'var(--text-40)' }}>Please wait while we upload the image and save the details.</p>
+          <h2 style={{ margin: 0 }}>Saving Event...</h2>
+          <p style={{ color: 'var(--text-40)' }}>Please wait while we process the details.</p>
           <style>
             {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
           </style>
@@ -291,8 +395,24 @@ export default function AdminEvents() {
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-55)' }}>ID: {event.slug}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => openEditForm(event)}
+                    style={{ 
+                      padding: '0.5rem 1rem', 
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                      color: '#3b82f6', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.85rem',
+                      transition: 'background 0.2s',
+                      flex: 1
+                    }}
+                  >
+                    Edit
+                  </button>
                   <button 
                     onClick={() => handleDelete(event._id)} 
                     style={{ 
@@ -304,10 +424,9 @@ export default function AdminEvents() {
                       cursor: 'pointer',
                       fontWeight: '600',
                       fontSize: '0.85rem',
-                      transition: 'background 0.2s'
+                      transition: 'background 0.2s',
+                      flex: 1
                     }}
-                    onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
-                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                   >
                     Delete
                   </button>

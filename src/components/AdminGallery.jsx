@@ -11,6 +11,9 @@ export default function AdminGallery() {
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Edit state
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetchGallery();
@@ -55,36 +58,55 @@ export default function AdminGallery() {
     }
   };
 
+  const openEditForm = (img) => {
+    setCaption(img.caption || '');
+    setSelectedEventId(img.eventId ? img.eventId._id || img.eventId : '');
+    setImageFile(null); // Optional to change
+    setImagePreview(img.imageUrl);
+    setEditingId(img._id);
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancel = () => {
+    setCaption('');
+    setSelectedEventId('');
+    setImageFile(null);
+    setImagePreview(null);
+    setEditingId(null);
+    setShowAddForm(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!imageFile) {
+    if (!editingId && !imageFile) {
       return alert('Please select an image to upload');
     }
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/gallery', {
-        method: 'POST',
+      const url = editingId ? `/api/gallery?id=${editingId}` : '/api/gallery';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const payload = {
+        caption,
+        eventId: selectedEventId || null,
+        imageBase64: imageFile // Null if unchanged on edit
+      };
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          caption,
-          eventId: selectedEventId || null,
-          imageBase64: imageFile,
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        setCaption('');
-        setSelectedEventId('');
-        setImageFile(null);
-        setImagePreview(null);
-        e.target.reset();
-        setShowAddForm(false);
+        handleCancel();
         fetchGallery();
-        alert('Image added to gallery!');
+        alert(editingId ? 'Image updated!' : 'Image added to gallery!');
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to add image');
+        alert(data.error || 'Failed to save image');
       }
     } catch (err) {
       console.error(err);
@@ -94,7 +116,7 @@ export default function AdminGallery() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
+    if (!window.confirm('Are you sure you want to delete this image? The photo will also be permanently deleted.')) return;
     
     try {
       const res = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
@@ -118,7 +140,7 @@ export default function AdminGallery() {
           <p style={{ color: 'var(--text-62)', margin: '0.25rem 0 0 0' }}>Upload photos and optionally link them to specific events.</p>
         </div>
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => showAddForm ? handleCancel() : setShowAddForm(true)}
           className="btn btnPrimary"
           style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', fontWeight: '600' }}
         >
@@ -126,7 +148,7 @@ export default function AdminGallery() {
         </button>
       </div>
       
-      {/* Upload Form */}
+      {/* Upload/Edit Form */}
       {showAddForm && (
         <div style={{
           backgroundColor: 'var(--field-bg)', 
@@ -137,12 +159,16 @@ export default function AdminGallery() {
           boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
           animation: 'fadeInDown 0.3s ease'
         }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem' }}>Upload to Gallery</h3>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem' }}>
+            {editingId ? 'Edit Gallery Image' : 'Upload to Gallery'}
+          </h3>
+          <form onSubmit={handleSubmit} className="adminFormGrid">
             
             {/* Left: Image Uploader */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>Select Image *</label>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                Select Image {editingId ? '(Optional to change)' : '*'}
+              </label>
               <div style={{ 
                 border: '2px dashed var(--border-strong)', 
                 borderRadius: '12px', 
@@ -165,7 +191,7 @@ export default function AdminGallery() {
                     <span style={{ fontSize: '1rem', fontWeight: '500' }}>Click or drag image to upload</span>
                   </div>
                 )}
-                <input type="file" accept="image/*" onChange={handleFileChange} required style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                <input type="file" accept="image/*" onChange={handleFileChange} required={!editingId} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
               </div>
             </div>
 
@@ -201,9 +227,12 @@ export default function AdminGallery() {
                 </small>
               </div>
               
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" onClick={handleCancel} className="btn" style={{ padding: '0.8rem 2.5rem', fontSize: '1.05rem', borderRadius: '50px' }}>
+                  Cancel
+                </button>
                 <button type="submit" className="btn btnPrimary" disabled={isSubmitting} style={{ padding: '0.8rem 2.5rem', fontSize: '1.05rem', borderRadius: '50px' }}>
-                  {isSubmitting ? 'Uploading...' : 'Upload Image'}
+                  {isSubmitting ? 'Saving...' : (editingId ? 'Update Image' : 'Upload Image')}
                 </button>
               </div>
             </div>
@@ -260,25 +289,44 @@ export default function AdminGallery() {
                   {img.caption || 'No caption'}
                 </p>
                 
-                <button 
-                  onClick={() => handleDelete(img._id)} 
-                  style={{ 
-                    width: '100%',
-                    padding: '0.5rem', 
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                    color: '#ef4444', 
-                    border: 'none', 
-                    borderRadius: '8px', 
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.85rem',
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
-                  onMouseOut={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
-                >
-                  Delete Image
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => openEditForm(img)}
+                    style={{ 
+                      padding: '0.5rem', 
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                      color: '#3b82f6', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.85rem',
+                      transition: 'background 0.2s',
+                      flex: 1
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(img._id)} 
+                    style={{ 
+                      padding: '0.5rem', 
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                      color: '#ef4444', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.85rem',
+                      transition: 'background 0.2s',
+                      flex: 1
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}

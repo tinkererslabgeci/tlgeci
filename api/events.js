@@ -40,6 +40,20 @@ function generateSlug(title) {
     .replace(/^-+|-+$/g, '');
 }
 
+// Helper to extract Cloudinary public_id from URL
+function getPublicIdFromUrl(url) {
+  if (!url) return null;
+  try {
+    const parts = url.split('/');
+    const filename = parts.pop();
+    const folder = parts.pop();
+    const publicId = `${folder}/${filename.split('.')[0]}`;
+    return publicId;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -56,33 +70,31 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const events = await Event.find({}).sort({ date: -1 });
-      return res.status(200).json(events);
+      res.status(200).json(events);
     } catch (error) {
-      return res.status(500).json({ error: 'Failed to fetch events' });
+      res.status(500).json({ error: 'Failed to fetch events' });
     }
   } else if (req.method === 'POST') {
     try {
-      const { 
-        title, date, time, venue, 
-        description, fullDescription, registrationUrl, 
-        imageBase64, customTags 
-      } = req.body;
+      const { title, date, time, venue, description, fullDescription, registrationUrl, imageBase64, customTags } = req.body;
 
       if (!title || !date || !description || !imageBase64) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
+      // Upload image to Cloudinary
       const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-        folder: 'tlgeci/events',
+        folder: 'tlgeci-events',
       });
 
+      // Handle tags
       let finalTags = [];
       if (customTags && customTags.trim().length > 0) {
-        finalTags = customTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        finalTags = customTags.split(',').map(t => t.trim().toLowerCase());
       } else {
         finalTags = generateTags(title, description);
       }
-      
+
       let baseSlug = generateSlug(title);
       let slug = baseSlug;
       let counter = 1;
@@ -112,13 +124,76 @@ export default async function handler(req, res) {
       console.error(error);
       return res.status(500).json({ error: 'Failed to create event: ' + error.message });
     }
+  } else if (req.method === 'PUT') {
+    try {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'Missing event ID' });
+
+      const { title, date, time, venue, description, fullDescription, registrationUrl, imageBase64, customTags } = req.body;
+      
+      const eventToUpdate = await Event.findById(id);
+      if (!eventToUpdate) return res.status(404).json({ error: 'Event not found' });
+
+      let posterSrc = eventToUpdate.posterSrc;
+
+      // Only upload new image if one was provided
+      if (imageBase64) {
+        // Upload new
+        const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+          folder: 'tlgeci-events',
+        });
+        
+        // Try to delete old image
+        const oldPublicId = getPublicIdFromUrl(posterSrc);
+        if (oldPublicId) {
+          try { await cloudinary.uploader.destroy(oldPublicId); } catch(e) { console.error('Failed to delete old image', e); }
+        }
+        
+        posterSrc = uploadResponse.secure_url;
+      }
+
+      // Handle tags
+      let finalTags = eventToUpdate.tags;
+      if (customTags !== undefined) {
+        if (customTags.trim().length > 0) {
+          finalTags = customTags.split(',').map(t => t.trim().toLowerCase());
+        } else {
+          finalTags = generateTags(title, description);
+        }
+      }
+
+      // We only update slug if title changed significantly, but let's keep it simple and just update other fields
+      eventToUpdate.title = title || eventToUpdate.title;
+      eventToUpdate.date = date || eventToUpdate.date;
+      eventToUpdate.time = time !== undefined ? time : eventToUpdate.time;
+      eventToUpdate.venue = venue !== undefined ? venue : eventToUpdate.venue;
+      eventToUpdate.description = description || eventToUpdate.description;
+      eventToUpdate.fullDescription = fullDescription !== undefined ? fullDescription : eventToUpdate.fullDescription;
+      eventToUpdate.registrationUrl = registrationUrl !== undefined ? registrationUrl : eventToUpdate.registrationUrl;
+      eventToUpdate.tags = finalTags;
+      eventToUpdate.posterSrc = posterSrc;
+
+      await eventToUpdate.save();
+      return res.status(200).json(eventToUpdate);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to update event: ' + error.message });
+    }
   } else if (req.method === 'DELETE') {
     try {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'Missing event ID' });
       
-      const event = await Event.findByIdAndDelete(id);
+      const event = await Event.findById(id);
       if (!event) return res.status(404).json({ error: 'Event not found' });
+      
+      // Try to delete image from cloudinary
+      const publicId = getPublicIdFromUrl(event.posterSrc);
+      if (publicId) {
+        try { await cloudinary.uploader.destroy(publicId); } catch(e) { console.error('Failed to delete image', e); }
+      }
+      
+      await Event.findByIdAndDelete(id);
       
       res.status(200).json({ message: 'Event deleted successfully' });
     } catch (error) {
