@@ -224,6 +224,16 @@ export default function EventsPage() {
   };
   const activeIsUpcoming = Boolean(activeEvent && upcomingEvents.some((event) => event.title === activeEvent.title));
 
+  if (loading) {
+    return (
+      <div className="sectionStack" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column' }}>
+        <div style={{ fontSize: '3rem', animation: 'spin 2s linear infinite', marginBottom: '1rem' }}>⌛</div>
+        <h2 style={{ color: 'var(--text-62)' }}>Loading Events...</h2>
+        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="sectionStack">
       <header className="pageHeader">
