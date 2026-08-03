@@ -29,6 +29,8 @@ export default function AdminDashboard({ theme, toggleTheme }) {
   const [labStatus, setLabStatus] = useState('OPEN');
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
+  const [expandedBookings, setExpandedBookings] = useState({});
+
   const [installPrompt, setInstallPrompt] = useState(null);
 
   useEffect(() => {
@@ -251,9 +253,28 @@ export default function AdminDashboard({ theme, toggleTheme }) {
 
   return (
     <div className="sectionStack">
-      <header className="pageHeader">
-        <h1 className="pageTitle">Admin Dashboard</h1>
-        <p className="pageSubtitle">Manage Data & Approvals</p>
+      <header className="pageHeader" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h1 className="pageTitle" style={{ margin: 0 }}>Admin Dashboard</h1>
+          <button
+            className="themeToggleBtn"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            {theme === 'dark' ? (
+              <svg className="themeToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg className="themeToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+        </div>
+        <p className="pageSubtitle" style={{ margin: '0.5rem 0 0' }}>Manage Data & Approvals</p>
       </header>
 
       {/* Tabs Navigation */}
@@ -411,10 +432,10 @@ export default function AdminDashboard({ theme, toggleTheme }) {
                         <div style={{ fontWeight: 'bold' }}>{b.date}</div>
                         <div>{b.timeFrom} - {b.timeTo}</div>
                       </td>
-                      <td data-label="Purpose" style={{ padding: '1rem 0.5rem', maxWidth: '200px', fontSize: '0.9rem' }}>
+                      <td data-label="Purpose" className={!expandedBookings[b.id] ? "mobile-hidden" : ""} style={{ padding: '1rem 0.5rem', maxWidth: '200px', fontSize: '0.9rem' }}>
                         {b.purpose}
                       </td>
-                      <td data-label="Equipments" style={{ padding: '1rem 0.5rem', maxWidth: '250px', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+                      <td data-label="Equipments" className={!expandedBookings[b.id] ? "mobile-hidden" : ""} style={{ padding: '1rem 0.5rem', maxWidth: '250px', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
                         {b.totalText}
                       </td>
                       <td data-label="Actions" style={{ padding: '1rem 0.5rem', whiteSpace: 'nowrap' }}>
@@ -525,6 +546,10 @@ export default function AdminDashboard({ theme, toggleTheme }) {
                             </>
                           )}
                         </div>
+                      </td>
+                      {/* Mobile Expand Toggle Button */}
+                      <td className="mobile-expand-btn" onClick={() => setExpandedBookings(prev => ({ ...prev, [b.id]: !prev[b.id] }))}>
+                        {expandedBookings[b.id] ? '▲ Hide Purpose & Equipments' : '▼ View Purpose & Equipments'}
                       </td>
                     </tr>
                   );

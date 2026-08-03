@@ -469,7 +469,6 @@ a {
 /* Date/Time picker polish (keep native UI, improve readability) */
 .input[type='date'],
 .input[type='time'] {
-  color-scheme: dark;
   cursor: pointer;
   padding-right: 2.6rem;
   font-variant-numeric: tabular-nums;
@@ -2384,3 +2383,9 @@ textarea.footerContactInput {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .mobile-hidden { display: none !important; }
+  .mobile-expand-btn { display: flex !important; justify-content: center; padding: 0.5rem; background: var(--field-bg); cursor: pointer; color: var(--text-62); }
+}
+.mobile-expand-btn { display: none; }

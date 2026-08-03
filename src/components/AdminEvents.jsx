@@ -22,6 +22,7 @@ export default function AdminEvents() {
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Edit state
   const [editingId, setEditingId] = useState(null);
@@ -352,50 +353,68 @@ export default function AdminEvents() {
         </div>
       )}
 
-      {/* Events Grid */}
+      )}
+
+      {/* Events Search & Grid */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Managed Events</h3>
+        <input 
+          type="text" 
+          className="input" 
+          placeholder="Search events..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ width: '250px', padding: '0.5rem 1rem' }}
+        />
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-62)' }}>Loading events...</div>
       ) : (
-        <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
           {events.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', backgroundColor: 'var(--field-bg)', borderRadius: '12px', border: '1px dashed var(--border-strong)' }}>
               <p style={{ color: 'var(--text-62)', fontSize: '1.1rem' }}>No events found. Create your first event above!</p>
             </div>
-          ) : events.map(event => (
+          ) : events.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()) || (e.tags && e.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))).length === 0 ? (
+             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-62)' }}>
+              No events matched your search.
+             </div>
+          ) : events.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()) || (e.tags && e.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))).map(event => (
             <div key={event._id} style={{ 
               backgroundColor: 'var(--modal-bg-mix)', 
               border: '1px solid var(--border-strong)', 
-              borderRadius: '16px', 
+              borderRadius: '12px', 
               overflow: 'hidden',
               display: 'flex', 
               flexDirection: 'column',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease'
             }}
             className="hover-card-effect"
             >
-              <div style={{ position: 'relative', height: '180px', width: '100%' }}>
+              <div style={{ position: 'relative', height: '140px', width: '100%' }}>
                 <img src={event.posterSrc || event.imageUrl} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', padding: '0.3rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', backdropFilter: 'blur(4px)' }}>
+                <div style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.75)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', backdropFilter: 'blur(4px)' }}>
                   {new Date(event.date).toLocaleDateString()}
                 </div>
               </div>
               
-              <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: '700', lineHeight: 1.3 }}>{event.title}</h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-62)', margin: '0 0 1rem 0', flex: 1 }}>
-                  {event.description.length > 80 ? event.description.substring(0, 80) + '...' : event.description}
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '1.05rem', fontWeight: '700', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{event.title}</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-62)', margin: '0 0 0.8rem 0', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {event.description}
                 </p>
                 
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.2rem' }}>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   {event.tags && event.tags.slice(0,3).map((tag, i) => (
-                    <span key={i} style={{ backgroundColor: 'var(--field-bg)', border: '1px solid var(--border-strong)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', color: 'var(--text-80)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <span key={i} style={{ backgroundColor: 'var(--field-bg)', border: '1px solid var(--border-strong)', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', color: 'var(--text-80)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       #{tag}
                     </span>
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.8rem', gap: '0.5rem' }}>
                   <button 
                     onClick={() => openEditForm(event)}
                     style={{ 

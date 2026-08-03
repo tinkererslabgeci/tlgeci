@@ -1,6 +1,7 @@
 {
   "name": "tlgeci",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "scripts": {
     "dev": "vite",
