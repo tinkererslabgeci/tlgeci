@@ -456,6 +456,7 @@
     let idxItemQty = header.indexOf('ItemQuantitiesJSON');
     let idxTotalText = header.indexOf('TotalText');
     let idxName = header.indexOf('Name');
+    let idxStatus = header.indexOf('Status'); // Added to filter out REJECTED/CANCELLED bookings
 
     // Fallback to the column order used by appendBooking_() when headers don't match.
     // Order (0-based):
@@ -478,6 +479,12 @@
     const bookings = [];
     for (var r = 1; r < values.length; r++) {
       const row = values[r];
+      
+      if (idxStatus >= 0) {
+        const status = String(row[idxStatus] || '').trim().toUpperCase();
+        if (status === 'REJECTED' || status === 'CANCELLED') continue; // Do not block capacity for cancelled bookings
+      }
+
       const date = normalizeDateValue_(row[idxDate]);
       const timeFrom = normalizeTimeValue_(row[idxFrom]);
       const timeTo = normalizeTimeValue_(row[idxTo]);
@@ -1035,6 +1042,7 @@
     setCol('BookingRequestKey', reqKey);
 
     sh.appendRow(row);
+    SpreadsheetApp.flush(); // Ensure cache is written immediately to avoid concurrent duplicates
     return sh.getLastRow();
   }
 

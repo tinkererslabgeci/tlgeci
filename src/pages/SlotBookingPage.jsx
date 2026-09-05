@@ -1426,6 +1426,8 @@ export default function SlotBookingPage() {
 
   function onSubmit(e) {
     e.preventDefault()
+    if (isSubmitting) return
+
     setError('')
     setSheetError('')
     setSheetStatus('')
@@ -1448,6 +1450,8 @@ export default function SlotBookingPage() {
       setError('Please enter a valid phone number (at least 10 digits).')
       return
     }
+
+    setIsSubmitting(true)
 
     const booking = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
@@ -1591,6 +1595,9 @@ export default function SlotBookingPage() {
       .catch((err) => {
         setSheetStatus('')
         setSheetError(String(err?.message || err || 'Failed to store/check booking'))
+      })
+      .finally(() => {
+        setIsSubmitting(false)
       })
 
     return
@@ -2056,10 +2063,10 @@ export default function SlotBookingPage() {
                   ref={submitBtnRef}
                   className="btn"
                   type="submit"
-                  disabled={!canSubmit}
-                  style={{ opacity: canSubmit ? 1 : 0.55, flex: '1 1 auto' }}
+                  disabled={!canSubmit || isSubmitting}
+                  style={{ opacity: canSubmit && !isSubmitting ? 1 : 0.55, flex: '1 1 auto' }}
                 >
-                  Submit Booking
+                  {isSubmitting ? 'Submitting...' : 'Submit Booking'}
                 </button>
               </div>
 
