@@ -697,6 +697,7 @@ export default function SlotBookingPage() {
   const [retryingSubmit, setRetryingSubmit] = useState(false)
   const [nowTick, setNowTick] = useState(0)
   const submitBtnRef = useRef(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     const id = setInterval(() => setNowTick((t) => t + 1), 30 * 1000)
