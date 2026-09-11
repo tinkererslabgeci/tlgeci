@@ -1898,6 +1898,7 @@
     const idxReason = findColumnIndexByCandidates_(headers, ['RejectionReason', 'Rejection Reason'], -1);
     const idxName = findColumnIndexByCandidates_(headers, ['Name', 'Full Name'], -1);
     const idxEmail = findColumnIndexByCandidates_(headers, ['Email', 'Email ID', 'Email Address'], -1);
+    const idxPhone = findColumnIndexByCandidates_(headers, ['Phone', 'Phone Number', 'Contact Number', 'Contact'], -1);
     const idxDept = findColumnIndexByCandidates_(headers, ['Department'], -1);
     const idxSem = findColumnIndexByCandidates_(headers, ['Semester'], -1);
     const idxDate = findColumnIndexByCandidates_(headers, ['Date', 'Date of using lab facilities', 'Slot Date'], -1);
@@ -1923,6 +1924,7 @@
         rejectionReason: idxReason >= 0 ? String(row[idxReason] || '').trim() : '',
         name:            idxName >= 0 ? String(row[idxName] || '').trim() : '',
         email:           idxEmail >= 0 ? String(row[idxEmail] || '').trim() : '',
+        phone:           idxPhone >= 0 ? String(row[idxPhone] || '').trim() : '',
         department:      idxDept >= 0 ? String(row[idxDept] || '').trim() : '',
         semester:        idxSem >= 0 ? String(row[idxSem] || '').trim() : '',
         date:            normalizeDateValue_(dateVal),

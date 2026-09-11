@@ -205,6 +205,7 @@ export default function AdminDashboard({ theme, toggleTheme }) {
       return (
         b.name?.toLowerCase().includes(term) ||
         b.email?.toLowerCase().includes(term) ||
+        b.phone?.toLowerCase().includes(term) ||
         b.purpose?.toLowerCase().includes(term) ||
         b.date?.includes(term)
       );
@@ -426,7 +427,14 @@ export default function AdminDashboard({ theme, toggleTheme }) {
                       <td data-label="Name / Contact" style={{ padding: '1rem 0.5rem' }}>
                         <div style={{ fontWeight: 'bold' }}>{b.name}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-80)' }}>{b.email}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-62)' }}>{b.department}, Sem {b.semester}</div>
+                        {b.phone && (
+                          <div style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
+                            <a href={`tel:${b.phone}`} style={{ color: 'var(--link)', textDecoration: 'none' }}>
+                              📞 {b.phone}
+                            </a>
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-62)', marginTop: '0.15rem' }}>{b.department}, Sem {b.semester}</div>
                       </td>
                       <td data-label="Date & Time" style={{ padding: '1rem 0.5rem', fontSize: '0.9rem' }}>
                         <div style={{ fontWeight: 'bold' }}>{b.date}</div>
