@@ -171,7 +171,10 @@ function AppShell() {
                   <a href="mailto:tinkererslabgeci@gecidukki.ac.in">tinkererslabgeci@gecidukki.ac.in</a>
                 </li>
                 <li>
-                  Phone: <a href="tel:+918078479399">+91 80784 79399</a>
+                  Phone: <a href="tel:+918078479399">+91 80784 79399</a> (Pranay)
+                </li>
+                <li>
+                  Phone: <a href="tel:+918921661311">+91 89216 61311</a> (Renvin)
                 </li>
               </ul>
 
